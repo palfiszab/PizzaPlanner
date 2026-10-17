@@ -1,111 +1,153 @@
-
-const $ = id => document.getElementById(id);
-const DAY_NAMES = ['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
-const DAY_SHORT = ['Vas','Hét','Kedd','Sze','Csüt','Pén','Szo'];
+const $=id=>document.getElementById(id);
+const DAY_NAMES=['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
 function pad(n){return String(n).padStart(2,'0')}
 function localValue(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`}
 function fmt(d){return new Intl.DateTimeFormat(PizzaMessages.locale,{year:'numeric',month:'2-digit',day:'2-digit',weekday:'short',hour:'2-digit',minute:'2-digit'}).format(d)}
-function addMin(d,m){return new Date(d.getTime()+m*60000)}
 function subMin(d,m){return addMin(d,-m)}
-function round2(n){return Math.round(n*100)/100}
-
-function getNumbers(){
-  const flourTotal=+$('flourTotal').value, poolishFlour=+$('poolishFlour').value;
-  const hydration=+$('hydration').value/100, saltPct=+$('saltPct').value/100;
-  const poolishWater=poolishFlour, finalFlour=flourTotal-poolishFlour, totalWater=Math.round(flourTotal*hydration), finalWater=totalWater-poolishWater;
-  return {flourTotal,poolishFlour,poolishWater,finalFlour,totalWater,finalWater,salt:Math.round(flourTotal*saltPct),oil:Math.round(flourTotal/1000*(+$('oil').value))};
+function text(parent,tag,value,className){const el=document.createElement(tag);el.textContent=value;if(className)el.className=className;parent.append(el);return el}
+let current=null, running=false, queue=[], seen=new Set(), timer=null, audio=null;
+const choices=new Map();
+let calendarId='plan-'+Date.now().toString(36);
+function selectedIds(){return new Set(current?current.events.filter(e=>e.active&&choices.get(e.id)!==false).map(e=>e.id):[])}
+function configuration(){
+ const hours=(new Date($('bakeDate').value)-new Date($('startDate').value))/3600000;
+ return {foldMode:$('foldMode').value,profile:$('profile').value,method:$('method').value,quantity:$('quantity').value,count:+$('count').value,ballWeight:+$('ballWeight').value,width:+$('width').value,length:+$('length').value,density:+$('density').value,flour:+$('flourTotal').value,poolishPct:+$('poolishPct').value,hydration:+$('hydration').value,salt:+$('saltPct').value,oil:+$('oil').value,yeastPct:+$('yeastPct').value,temp:+$('roomTemp').value,fridge:+$('fridgeTemp').value,flourType:$('flourType').value,style:$('mode').value==='both'?(hours>=48?'long':hours>=36?'normal':'fast'):$('style').value};
 }
-function effectiveStyle(){
-  if($('mode').value!=='both') return $('style').value;
-  const hours=(new Date($('bakeDate').value)-new Date($('startDate').value))/3600000;
-  return hours>=48?'long':hours>=36?'normal':'fast';
+function field(id,visible){$(id).disabled=!visible;$(id).parentElement.hidden=!visible}
+function syncFields(){
+ const c=configuration(),p=PIZZA_PROFILES[c.profile],mode=$('mode').value;
+ $('style').disabled=mode==='both';$('startDate').disabled=mode==='bake';$('bakeDate').disabled=mode==='start';
+ $('timingHelp').textContent=PizzaMessages.hu[mode];
+ for(const opt of $('method').options) opt.disabled=!p.methods.includes(opt.value);
+ for(const opt of $('quantity').options) opt.disabled=opt.value===(p.pan?'pieces':'pan');
+ if(!p.methods.includes(c.method)) $('method').value=p.methods[0];
+ if((p.pan&&c.quantity==='pieces')||(!p.pan&&c.quantity==='pan')) $('quantity').value=p.pan?'pan':'pieces';
+ const quantity=$('quantity').value;
+ field('flourTotal',quantity==='flour');field('count',quantity!=='flour'||p.pan);field('ballWeight',quantity==='pieces');
+ for(const id of ['width','length','density'])field(id,quantity==='pan');
+ field('poolishPct',$('method').value==='poolish');field('yeastPct',$('method').value==='direct');
+ $('profileNote').textContent=p.note;
+ const changed=+ $('hydration').value!==p.hydration||+$('saltPct').value!==p.salt||+$('oil').value!==p.oil||$('foldMode').value!==p.foldDefault;
+ $('customNote').textContent=changed?'Egyéni receptbeállítások; eltérnek a profil alapértékeitől.':`Profil alapértékei: ${p.hydration}% víz, ${p.salt}% só, ${p.oil} g olaj / kg liszt. Szabadon módosíthatók.`;
 }
-function options(){return {temp:+$('roomTemp').value,style:effectiveStyle(),fixedInterval:$('mode').value==='both',flourType:$('flourType').value}}
-function buildFromBake(bake){return plan(subMin(bake,TOTAL_HOURS[$('style').value]*60),bake,options())}
-function buildFromStart(start){return plan(start,addMin(start,TOTAL_HOURS[$('style').value]*60),options())}
-function parseAvailability(text, anchor){
-  const out=[]; if(!text.trim()) return out;
-  const lines=text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  for(const line of lines){
-    const m=line.toLowerCase().match(/^(\d{4}-\d{2}-\d{2}|holnapután|holnap|ma|hétfő|kedd|szerda|csütörtök|péntek|szombat|vasárnap)\s+(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})$/);
-    if(!m) throw new Error(`Nem értelmezhető idősáv a(z) ${lines.indexOf(line)+1}. sorban.`);
-    let date=new Date(anchor); date.setSeconds(0,0);
-    if(/^\d{4}/.test(m[1])) { date=new Date(m[1]+'T00:00'); if(isNaN(date)||localValue(date).slice(0,10)!==m[1]) throw new Error('Érvénytelen dátum az idősávban.'); }
-    else if(m[1]==='holnap') date.setDate(date.getDate()+1);
-    else if(m[1]==='holnapután') date.setDate(date.getDate()+2);
-    else if(m[1] !== 'ma'){
-      const target=DAY_NAMES.indexOf(m[1]); let delta=(target-date.getDay()+7)%7; if(delta===0 && date.getHours()>23) delta=7; date.setDate(date.getDate()+delta);
-    }
-    const [sh,sm]=m[2].split(':').map(Number), [eh,em]=m[3].split(':').map(Number);
-    if(sh>23||eh>23||sm>59||em>59||(sh===eh&&sm===em)) throw new Error('Az idősávban 00:00–23:59 közötti, eltérő időpontokat adj meg.');
-    const s=new Date(date), e=new Date(date); s.setHours(sh,sm,0,0); e.setHours(eh,em,0,0); if(e<=s) e.setDate(e.getDate()+1);
-    out.push({s,e});
-  }
-  out.sort((a,b)=>a.s-b.s);
-  return out.reduce((merged,w)=>{const last=merged[merged.length-1]; if(last&&w.s<=last.e) last.e=new Date(Math.max(+last.e,+w.e)); else merged.push(w); return merged},[]);
-}
-function availabilityNotes(tl){
-  const wins=parseAvailability($('availability').value,new Date()); if(!wins.length) return [];
-  const checks=[['Poolish indítása',tl.poolish,15],['Dagasztás',tl.mix,30],['Só + olaj',tl.salt,15],['1. laminálás',tl.lam1,5],['2. laminálás (ha szükséges)',tl.lam2,5],['Bucizás',tl.ball,15],['Hűtőbe helyezés',tl.fridgeIn,5],['Kivétel',tl.out,5],['Sütés kezdete',tl.bake,0]];
-  return checks.filter(([,t,m])=>!wins.some(w=>t>=w.s&&addMin(t,m)<=w.e)).map(([name,t,m])=>`${name}: ${fmt(t)} (${m} perc) nem fér bele a szabad idősávokba.`);
-}
-function render(tl, modeNote){
-  const n=getNumbers(), temp=+$('roomTemp').value, style=effectiveStyle();
-  const y=yeast(n.poolishFlour,temp,style);
-  const {saltWater,firstWater}=waterSplit(n.finalWater);
-  const warnings=[];
-  if(n.finalWater<0) warnings.push('A poolish vízmennyisége több, mint a teljes célvíz. Csökkentsd a poolish lisztet vagy emeld a hidratációt.');
-  if(temp>=26) warnings.push('26 °C körül a poolish gyorsan túléretté válhat. Ha korábban csúcson van, kezdj dagasztani hamarabb.');
-  if($('flourType').value==='durum') warnings.push('Durum/durumos lisztnél a poolish kevésbé látványosan emelkedhet; a buborék és az illat fontosabb jel.');
-  const pastStartNote=tl.poolish<new Date() ? '<p class="note">A megadott kezdési időpont már elmúlt. A terv ettől az időponttól mutatja a munkafázisokat.</p>' : '';
-  warnings.push(...availabilityNotes(tl));
-  modeNote+=` Teljes idő: ${round2((tl.bake-tl.poolish)/3600000)} óra; poolish: ${round2((tl.mix-tl.poolish)/3600000)} óra; hidegérlelés: ${round2((tl.out-tl.fridgeIn)/3600000)} óra.`;
-  const rows=[
-    [tl.poolish,'Poolish indítása',`${n.poolishFlour} g liszt + ${n.poolishWater} ml víz + ${round2(y).toFixed(2)} g aktív szárított élesztő. Lazán fedve.`],
-    [tl.mix,'Dagasztás',`Poolish + ${n.finalFlour} g liszt + kb. ${firstWater} ml víz. Extra élesztő alapból nem kell.`],
-    [tl.salt,'Só + olaj',`${n.salt} g só kb. ${saltWater} ml visszatartott vízzel hozzáadva. Utána ${n.oil} g olaj, ha használod.`],
-    [tl.rest,'Pihenő',`Letakarva ${(tl.lam1-tl.rest)/60000} perc.`],
-    [tl.lam1,'1. finom laminálás','Kb. 5 perc. Csak szerkezetigazítás, nem vékonyra húzás.'],
-    [tl.restAfterLam1,'Pihenő',`Letakarva ${(tl.lam2-tl.restAfterLam1)/60000} perc. Ha még feszes vagy visszaugrik, pihentesd tovább; ne erőltesd a nyújtást.`],
-    [tl.lam2,'2. finom laminálás','Kb. 5 perc. Csak ha szükséges és a tészta engedi; egyébként hagyd ki.'],
-    [tl.restAfterLam2,'Pihenő formázás előtt',`Letakarva ${(tl.ball-tl.restAfterLam2)/60000} perc a bucizásig. Ha a második laminálást kihagyod, ezt az időt is pihenéssel töltsd.`],
-    [tl.ball,'Bucizás','200–220 g-os bucik, nem túl szorosra.'],
-    [tl.fridgeIn,'Hűtő',`Lezárt dobozban ${$('fridgeTemp').value} °C körül.`],
-    [tl.out,'Kivétel a hűtőből','30–40 percig zárva hagyd, utána akklimatizáció.'],
-    [tl.bake,'Sütés','Nyújtás középről kifelé; a peremet ne nyomd ki.']
-  ];
-  $('results').innerHTML=`<div class="card"><p class="ok">${modeNote}</p>${pastStartNote}<div class="summary"><div><span class="pill">összliszt</span><strong>${n.flourTotal} g</strong></div><div><span class="pill">összvíz</span><strong>${n.totalWater} ml</strong></div><div><span class="pill">főtészta víz</span><strong>${n.finalWater} ml</strong></div><div><span class="pill">só</span><strong>${n.salt} g</strong></div><div><span class="pill">olaj</span><strong>${n.oil} g</strong></div><div><span class="pill">poolish élesztő</span><strong>${round2(y).toFixed(2)} g</strong></div></div>${warnings.length?`<p class="warning">${warnings.join('<br>')}</p>`:''}<div class="table-wrap"><table><thead><tr><th>Idő</th><th>Lépés</th><th>Részlet</th></tr></thead><tbody>${rows.map(([time,step,detail])=>`<tr><td>${fmt(time)}</td><td><strong>${step}</strong></td><td>${detail}</td></tr>`).join('')}</tbody></table></div><p class="note">Megjegyzés: a só oldóvize mindig a teljes vízmennyiség része, nem plusz víz. A szabad idősávok ellenőrzése még egyszerű prototípus-logika.</p></div>`;
+function resetProfile(){
+ const p=PIZZA_PROFILES[$('profile').value];
+ $('hydration').value=p.hydration;$('saltPct').value=p.salt;$('oil').value=p.oil;
+ $('method').value=p.methods[0];$('poolishPct').value=50;
+ $('foldMode').value=p.foldDefault;
+ $('flourType').value=p.pan?'strong':'00';
+ $('quantity').value=p.pan?'pan':$('profile').value==='legacy'?'flour':'pieces';
+ $('count').value=p.pan?1:4;
+ $('ballWeight').value=p.ballWeight??250;
+ calc();
 }
 function validate(){
-  for(const input of document.querySelectorAll('input[type="number"]')){
-    if(!input.value.trim()||!Number.isFinite(+input.value)||!input.checkValidity()) throw new Error(`${document.querySelector('label[for="'+input.id+'"]').textContent}: adj meg a megengedett tartományba eső értéket.`);
-  }
-  const n=getNumbers();
-  if(n.poolishFlour>=n.flourTotal) throw new Error('A poolish lisztje legyen kevesebb az összes lisztnél.');
-  waterSplit(n.finalWater);
+ for(const input of document.querySelectorAll('input[type="number"]'))if(!input.disabled&&(!input.value.trim()||!Number.isFinite(+input.value)||!input.checkValidity())){
+  throw new Error(`${document.querySelector('label[for="'+input.id+'"]').textContent}: ellenőrizd a megadott értéket.`);
+ }
 }
 function calc(){
-  const mode=$('mode').value;
-  $('style').disabled=mode==='both';
-  $('startDate').disabled=mode==='bake'; $('bakeDate').disabled=mode==='start';
-  $('timingHelp').textContent=PizzaMessages.hu[mode];
-  try{
-    validate();
-    const start=new Date($('startDate').value), bake=new Date($('bakeDate').value);
-    let tl;
-    if(mode==='bake') {tl=buildFromBake(bake); $('startDate').value=localValue(tl.poolish);}
-    else if(mode==='start') {tl=buildFromStart(start); $('bakeDate').value=localValue(tl.bake);}
-    else tl=plan(start,bake,options());
-    render(tl,PizzaMessages.hu[mode]);
-  }catch(error){
-    $('results').replaceChildren();
-    const box=document.createElement('div'); box.className='card warning'; box.setAttribute('role','alert'); box.textContent=error.message; $('results').append(box);
-  }
+ syncFields();
+ try{
+  validate();const c=configuration(),mode=$('mode').value;
+  let start=new Date($('startDate').value),bake=new Date($('bakeDate').value);
+  if(mode==='start')bake=addMin(start,TOTAL_HOURS[c.style]*60);
+  if(mode==='bake')start=subMin(bake,TOTAL_HOURS[c.style]*60);
+  const result=recipePlan(start,bake,c),wins=parseAvailability($('availability').value,new Date());
+  if(mode==='start')$('bakeDate').value=localValue(bake);
+  if(mode==='bake')$('startDate').value=localValue(start);
+  current={...result,c,start,bake};render(wins);renderChoices();
+  if(running) rebuildQueue('A jelzések az aktuális tervre frissültek.');
+  $('startReminders').disabled=false;$('exportCalendar').disabled=false;
+ }catch(error){
+  current=null;$('results').replaceChildren();text($('results'),'p',error.message,'card warning');$('eventChoices').replaceChildren();
+  stopReminders('Hibás vagy hiányos terv: az emlékeztetők leálltak.');$('startReminders').disabled=true;$('exportCalendar').disabled=true;
+ }
 }
-function defaults(){
-  const now=new Date(); now.setSeconds(0,0); $('startDate').value=localValue(now);
-  $('bakeDate').value=localValue(addMin(now,36*60));
+function render(wins){
+ const root=$('results'),a=current.amounts,c=current.c;root.replaceChildren();const card=text(root,'div','','card');
+ text(card,'h2','A tervezett munkamenet');
+ text(card,'p',current.foldMode==='lamination'?'Két laminálás – kézi nyújtás és összehajtás · 20 / 25 / 30 perces pihenők. A második a tészta állapota szerint kihagyható.':current.foldMode==='two'?'Két kíméletes hajtogatás · 20 / 25 / 30 perces pihenők. A második hajtogatás a tészta állapota szerint kihagyható.':'Hajtogatás nélküli eljárás · 30 perc pihenő a só bedolgozása után.','note');
+ text(card,'p',`${PIZZA_PROFILES[c.profile].name} · ${c.method==='poolish'?'Poolish':'Direkt'} · Teljes idő: ${g(current.totalHours)} óra · Hidegérlelés: ${g(current.cold)} óra`,'ok');
+ if(current.start<new Date())text(card,'p','A megadott kezdési időpont már elmúlt. A terv ettől az időponttól mutatja a munkafázisokat.','note');
+ const summary=text(card,'div','','summary');
+ for(const [label,value] of [['Liszt',`${g(a.flour)} g`],['Víz',`${g(a.water)} g`],['Só',`${g(a.salt)} g`],['Olaj',`${g(a.oil)} g`],['Élesztő (ADY)',`${g(current.yeast,2)} g`],['Teljes tészta',`${g(a.total+current.yeast)} g`]]){
+  const cell=text(summary,'div','');text(cell,'span',label,'pill');text(cell,'strong',value);
+ }
+ if(c.quantity!=='flour')text(card,'p',PIZZA_PROFILES[c.profile].pan?`${c.count} tepsi · ${c.width} × ${c.length} cm · ${g(a.total/c.count)} g/tepsi, az élesztő kis tömegén felül.`:`${c.count} pizza · ${g(a.total/c.count)} g/buci, az élesztő kis tömegén felül.`,'note');
+ if(c.quantity==='pan')text(card,'p',`A ${g(c.density,2)} g/cm² tésztaterhelés módosítható kiinduló érték; nem stílusminősítési szabály.`,'note');
+ if(c.temp>=26)text(card,'p','Meleg szobában a tészta gyorsabban fejlődhet; ellenőrizd az állapotát.','warning');
+ const wrap=text(card,'div','','table-wrap'),table=text(wrap,'table',''),head=text(table,'thead',''),hr=text(head,'tr','');
+ for(const label of ['Idő','Lépés','Részlet'])text(hr,'th',label);
+ const body=text(table,'tbody','');
+ for(const e of current.events){
+  const row=text(body,'tr','');text(row,'td',fmt(e.time));text(row,'td',e.label);text(row,'td',e.detail+(e.active&&e.minutes?` Tervezett munka: ${e.minutes} perc.`:''));
+  if(e.active&&wins.length&&!wins.some(w=>e.time>=w.s&&addMin(e.time,e.minutes)<=w.e))text(card,'p',`${e.label}: ${fmt(e.time)} (${e.minutes} perc) nem fér a szabad idősávokba.`,'warning');
+ }
 }
-$('calc').addEventListener('click',calc);
-for(const input of document.querySelectorAll('input,select,textarea')) input.addEventListener('change',calc);
-defaults(); calc();
+function renderChoices(){
+ const box=$('eventChoices');box.replaceChildren();
+ for(const e of current.events.filter(e=>e.active)){
+  const label=text(box,'label','','check'),input=document.createElement('input');input.type='checkbox';input.checked=choices.get(e.id)!==false;
+  input.disabled=+e.time<=Date.now();input.addEventListener('change',()=>{choices.set(e.id,input.checked);if(running)rebuildQueue('A kijelölt jelzések frissültek.');});
+  label.append(input);text(label,'span',e.label+(input.disabled?' (elmúlt)':''));
+ }
+}
+function stopReminders(message='Az emlékeztetők leállítva.'){
+ running=false;if(timer!==null)clearInterval(timer);timer=null;queue=[];seen.clear();$('stopReminders').disabled=true;$('reminderStatus').textContent=message;$('nextReminder').textContent='';
+}
+function rebuildQueue(message){
+ queue=reminderQueue(current.events,selectedIds(),+$('lead').value,Date.now());seen=new Set();
+ if(!queue.length){stopReminders('Nincs kijelölt jövőbeli munkafázis.');return}
+ $('reminderStatus').textContent=message;tick();
+}
+function tick(){
+ if(!running)return;
+ const {due,missed}=dueReminders(queue,Date.now(),seen);
+ for(const item of due)announce(item.label,item.event.detail);
+ if(missed.length)text($('alerts'),'p',`${missed.length} jelzés időpontja elmúlt, amíg a böngésző nem futott aktívan. Ellenőrizd az idővonalat.`);
+ const next=queue.find(item=>!seen.has(item.key));
+ $('nextReminder').textContent=next?`Következő: ${next.label} · ${fmt(new Date(next.at))} · ${Math.max(0,Math.ceil((next.at-Date.now())/60000))} perc múlva`:'Minden beállított jelzés lezajlott.';
+ if(!next){running=false;clearInterval(timer);timer=null;$('stopReminders').disabled=true;$('reminderStatus').textContent='Minden beállított jelzés lezajlott.';}
+}
+function announce(label,detail){
+ text($('alerts'),'p',`${label} — ${detail}`);
+ while($('alerts').children.length>10)$('alerts').firstElementChild.remove();
+ if('Notification'in window&&Notification.permission==='granted')try{new Notification('PizzaPlanner',{body:label,tag:'pizzaplanner-step'})}catch{ $('notificationStatus').textContent='A rendszerértesítés ezen a böngészőn nem támogatott; az oldalon megjelent a jelzés.';}
+ if($('sound').checked&&audio)try{const osc=audio.createOscillator(),gain=audio.createGain();osc.connect(gain);gain.connect(audio.destination);gain.gain.value=.08;osc.frequency.value=660;osc.start();osc.stop(audio.currentTime+.4)}catch{}
+}
+function notificationState(){
+ $('notificationStatus').textContent=!('Notification'in window)?'Ez a böngésző nem támogat rendszerértesítést.':!window.isSecureContext?'Rendszerértesítéshez nyisd meg a közzétett HTTPS-oldalt.':Notification.permission==='granted'?'Rendszerértesítés engedélyezve. Mobilon az oldalon belüli jelzésre vagy a naptárra támaszkodj.':Notification.permission==='denied'?'A böngészőértesítés letiltva. Az oldalon belüli jelzés és a naptárexport használható.':'A rendszerértesítés külön engedélyezhető; az oldalon belüli jelzés enélkül is működik.';
+}
+$('notifications').addEventListener('click',async()=>{
+ if('Notification'in window&&window.isSecureContext&&Notification.permission==='default')try{await Notification.requestPermission()}catch{}
+ notificationState();
+});
+function prepareAudio(){
+ if($('sound').checked)try{
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(Audio){audio=audio||new Audio();audio.resume().catch(()=>{})}
+  else $('reminderStatus').textContent='Hangjelzés nem támogatott; a szöveges jelzések használhatók.';
+ }catch{}
+}
+$('sound').addEventListener('change',prepareAudio);
+$('startReminders').addEventListener('click',()=>{
+ if(!current)return;
+ prepareAudio();
+ stopReminders();running=true;rebuildQueue('Emlékeztetők futnak ezen a megnyitott oldalon.');
+ if(running){$('stopReminders').disabled=false;timer=setInterval(tick,1000)}
+});
+$('stopReminders').addEventListener('click',()=>stopReminders());
+$('lead').addEventListener('change',()=>{if(running)rebuildQueue('Az előjelzés frissült.')});
+$('exportCalendar').addEventListener('click',()=>{
+ if(!current)return;
+ if(!reminderQueue(current.events,selectedIds(),0,Date.now()).length){$('reminderStatus').textContent='Nincs kijelölt jövőbeli esemény az exporthoz.';return}
+ const data=calendarText(current.events,selectedIds(),+$('lead').value,new Date(),calendarId),url=URL.createObjectURL(new Blob([data],{type:'text/calendar;charset=utf-8'}));
+ const link=document.createElement('a');link.href=url;link.download='PizzaPlanner-v04.ics';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $('reminderStatus').textContent='A naptárfájl elkészült. Importáld a naptáradba, és ellenőrizd az eseményekhez tartozó értesítéseket.';
+});
+$('profile').addEventListener('change',resetProfile);$('resetProfile').addEventListener('click',resetProfile);$('calc').addEventListener('click',calc);
+for(const input of document.querySelectorAll('input,select,textarea'))if(!['profile','lead','sound'].includes(input.id))input.addEventListener('change',calc);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
+const now=new Date();now.setSeconds(0,0);$('startDate').value=localValue(now);$('bakeDate').value=localValue(addMin(now,36*60));$('style').value='normal';
+notificationState();calc();

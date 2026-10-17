@@ -1,34 +1,54 @@
-# PizzaPlanner
+# PizzaPlanner v0.4
 
-Magyar nyelvű poolish-pizzaidőzítő, v0.3.
+Magyar nyelvű, telepítés nélkül használható pizzatervező. Nyisd meg az `index.html` fájlt vagy szolgáld ki statikus weboldalként. A fájlok maradjanak egy mappaszerkezetben.
 
-Nyisd meg az `index.html` fájlt közvetlenül a böngészőben, vagy használd statikus weboldalként. Nincs szükség telepítésre vagy buildre.
+## Újdonságok
 
-## Tervezés
+- Saját poolish, nápolyi jellegű, római kerek (tonda romana) és római tepsis profil, külön munkamenettel.
+- Külön hajtogatási eljárás: két kíméletes hajtogatás (20/25/30 perces pihenők) vagy hajtogatás nélkül (egyetlen 30 perces pihenő a só bedolgozása után). A nápolyi profil alapértéke is a két hajtogatásos házi változat; ez nem nápolyi követelmény.
+- Direkt/poolish választás a kidolgozott profilpárosításoknál. Római tepsisnél csak direkt.
+- Mennyiségek lisztből, darabszám/buciméretből vagy tepsiméretből. A tepsiterhelés módosítható.
+- Profilalapértékek és egyéni arányok megkülönböztetése, visszaállítási gomb.
+- Indítható/leállítható emlékeztetők, 0/5/10 perces előjelzés, munkafázisonként kapcsolható jelzések, opcionális hang és böngészőértesítés.
+- Naptárexport (.ics) a kijelölt jövőbeli aktív lépésekhez, értesítési bejegyzésekkel.
 
-- **Kezdésből:** a kezdés rögzített, a sütés 24/36/48 eltelt órával későbbre frissül.
-- **Sütésből:** a sütés rögzített, a kezdés ugyanennyivel korábbra frissül.
-- **Két időpont:** mindkettő rögzített. Az időtartam-választó inaktív; a tényleges időintervallum számít. A becsléshez használt profil 36 óra alatt gyors, 36–48 óra között stabil, 48 órától hosszú. A prototípus 1–48 órás hidegérlelést enged.
+## Időzítés
 
-A teljes idő a poolish indításától a sütés kezdetéig tart. Óraátállításkor is eltelt órákat számolunk; a kijelzés a böngésző helyi időzónáját használja.
+Kezdésből tervezve a sütés, sütésből tervezve a kezdés frissül 24/36/48 eltelt órával. Két rögzített időpontnál a választó inaktív, a tényleges időintervallum számít. A múltbeli kezdés semleges tájékoztatás, nem hiba. A dátumokat a böngésző helyi időzónájában mutatjuk.
 
-Az idősávok csak ellenőrzésre szolgálnak. Soronként például `ma 18:00-22:00`, `szerda 06:30-08:00` vagy `2026-10-20 18:00-22:00`. A hétköznap a mai vagy következő előfordulást jelenti. Az éjfélen átnyúló sáv megengedett.
+Szabad idősávok például: `ma 18:00-22:00`, `szerda 06:30-08:00`, `2026-10-20 18:00-22:00`. A napnév mai vagy következő előfordulást jelöl. Éjfélen átnyúló sáv megadható. A program az aktív lépések teljes tervezett időtartamát ellenőrzi, de nem optimalizálja át a tervet. A sütésből csak a kezdést ellenőrzi.
 
-A hűtőhőmérséklet még nem módosítja az időket. A fermentációs és élesztőbecslések kísérleti jellegűek; figyeld a tészta tényleges állapotát.
+## Emlékeztetők használata
 
-## Fájlok és ellenőrzés
+1. Készíts érvényes tervet, jelöld ki a lépéseket és az előjelzést.
+2. Ha hangot szeretnél, kapcsold be az indítás előtt.
+3. Kattints az **Emlékeztetők indítása** gombra.
+4. Opcionálisan külön engedélyezd a böngészőértesítéseket.
 
-- `src/planner.js`: számítások, felülettől függetlenül.
-- `src/ui.js`: bevitel, idősávok, megjelenítés.
-- `src/messages.js`: a későbbi fordítások belépési pontja; egyelőre részleges magyar katalógus.
-- `tests/planner.test.cjs`: futtatás Node.js-szel: `node tests/planner.test.cjs`.
+A jelzések csak a nyitott oldal munkamenetében futnak. Újratöltéskor újra indítandók; bezárás vagy alvó készülék mellett nem garantálhatók. A háttérlap késhet. Öt percnél régebbi jelzéseket összesítve elmulasztottként mutatunk. A jövőbeli jelzéseket tervmódosításkor cseréljük; érvénytelen tervnél leállítjuk. Nincs szerveres push vagy háttérfigyelés.
 
-A következő lépések: pizzaprofilok, teljes többnyelvűség, idősáv-optimalizálás és dokumentált fermentációs modell.
+A rendszerértesítés böngészőtámogatást, engedélyt és biztonságos környezetet igényel; a közzétett HTTPS-változat ajánlott. Mobilon nincs garantált rendszerértesítés ebben a kiadásban. Az oldalon belüli jelzés engedély nélkül is működik. Hangot a böngésző vagy a rendszer némítása korlátozhatja.
+
+A naptárfájlt importáld a saját naptáradba, és ellenőrizd az értesítéseket: egyes naptárak figyelmen kívül hagyhatják az importált riasztásokat. A weboldal nem frissíti a korábbi importot. Tervmódosításkor töröld a régi importált eseményeket, majd importáld az új fájlt. A múltbeli események és az elmúlt előjelzések nem kerülnek exportálásra.
+
+## Szakmai korlátok
+
+A profilok kísérleti házi adaptációk, nem minősített receptek. Az élesztőadagolás és a hűtőhőmérséklet hatása még nem validált fermentációs modell. A tészta állapota elsődleges. A pontos források és eltérések: [docs/PROFILES.md](docs/PROFILES.md).
+
+A felület magyar. A meglévő üzenetkatalógus és nyelvi dátumformázás megmaradt; az öt teljes nyelv a következő fejlesztési szakasz.
+
+## Ellenőrzés
+
+Node.js 18 vagy újabb, külső csomag nélkül:
+
+```
+node tests/planner.test.cjs
+node tests/v04.test.cjs
+node tests/ui.test.cjs
+```
+
+A felületi teszt elszigetelt DOM-modellel ellenőrzi az eseménykezelőket. Nem helyettesít valódi böngészős, hang- és rendszerértesítési próbát.
 
 MIT-licenc.
 
-## Hajtogatás és pihentetés
-
-A só és olaj bedolgozása után 20 perc pihenő következik az első laminálásig. A laminálás tervezett aktív ideje 5 perc. Utána külön 25 perc pihenő következik a következő laminálásig, majd az utolsó után külön 30 perc a bucizásig. A második laminálás opcionális; kihagyásakor a fenntartott idő pihenés marad.
-
-Forrásjegyzet: a felhasználó által közölt részlet Maggie Glezer *Kenyérsütés mesterfokon* című könyvének 28. oldaláról, „A sütés alapjai” fejezet: kenyértésztánál legalább 15 perc két hajtogatás között, körülbelül 30 perc az utolsó után a formázásig, legfeljebb öt hajtogatás. A könyvoldalt nem ellenőriztük önállóan. Ez kenyértésztára vonatkozó útmutatás; nem igazolt pizzatészta-specifikus minimum. A 20/25/30 perces pihenősor a projekt tervezési döntése, nem bizonyítottan optimális arány. Pontosabb vagy ellentmondó forrás esetén felülvizsgálandó. Az 5 perc aktív munka becslés; a tészta állapota elsődleges.
+A római kerek profil direkt eljárást és alapértelmezetten 220 g-os bucikat használ; a sütés előtti sodrófás nyújtás külön lépés és külön emlékeztető. A laminálás (munkalapon végzett kézi lapra nyújtás és összehajtás) külön választható a kíméletes hajtogatástól. Saját poolish és nápolyi profilnál laminálás az alapérték, rómaiaknál kíméletes hajtogatás.

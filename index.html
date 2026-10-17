@@ -1,72 +1,11 @@
 <!doctype html>
-<html lang="hu">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PizzaPlanner – Fermentációs időzítő</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-<main>
-  <h1>PizzaPlanner <span class="tag">v0.3</span></h1>
-  <div class="subtitle">Poolish-os pizzaidőzítő: előre vagy visszafelé számol, és ellenőrzi a megadott szabad idősávokat.</div>
-
-  <section class="card">
-    <div class="grid">
-      <div>
-        <label for="mode">Tervezési mód</label>
-        <select id="mode">
-          <option value="bake" selected>Sütési időből számoljon vissza</option>
-          <option value="start">Kezdésből számoljon előre</option>
-          <option value="both">Adott kezdés + adott sütés ellenőrzése</option>
-        </select>
-      </div>
-      <div>
-        <label for="startDate">Kezdés / poolish indítás</label>
-        <input id="startDate" type="datetime-local" />
-      </div>
-      <div>
-        <label for="bakeDate">Sütés / vendégek időpontja</label>
-        <input id="bakeDate" type="datetime-local" />
-      </div>
-      <div>
-        <label for="style">Teljes idő: poolish indításától a sütés kezdetéig</label>
-        <select id="style">
-          <option value="fast">Gyors – 24 óra</option>
-          <option value="normal" selected>Stabil – 36 óra</option>
-          <option value="long">Hosszú – 48 óra</option>
-        </select>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="grid">
-      <div><label for="flourTotal">Összes liszt (g)</label><input id="flourTotal" type="number" value="1000" min="100" step="10" /></div>
-      <div><label for="poolishFlour">Poolish liszt (g)</label><input id="poolishFlour" type="number" value="500" min="50" step="10" /></div>
-      <div><label for="hydration">Cél hidratáció (%)</label><input id="hydration" type="number" value="61" min="50" max="75" step="0.5" /></div>
-      <div><label for="saltPct">Só (%)</label><input id="saltPct" type="number" value="3" min="1.5" max="4" step="0.1" /></div>
-      <div><label for="oil">Olaj (g / összliszt kg)</label><input id="oil" type="number" value="8" min="0" max="25" step="1" /></div>
-      <div><label for="roomTemp">Lakás hőmérséklet (°C)</label><input id="roomTemp" type="number" value="22" min="16" max="30" step="0.5" /></div>
-      <div><label for="fridgeTemp">Hűtő hőmérséklet (°C)</label><input id="fridgeTemp" type="number" value="5" min="2" max="8" step="0.5" /></div>
-      <div><label for="flourType">Liszt jellege</label><select id="flourType"><option value="00" selected>00 pizzaliszt</option><option value="durum">Durum / durumos pizzaliszt</option><option value="strong">Erős kenyér/pizza liszt</option></select></div>
-    </div>
-  </section>
-
-  <p class="note" id="timingHelp"></p>
-  <p class="note">A hűtő hőmérséklete tájékoztató adat; a v0.3 még nem számol hőmérsékletfüggő hidegérleléssel. Az élesztőmennyiség a korábbi prototípus becslése.</p>
-  <section class="card">
-    <label for="availability">Mikor tudsz vele foglalkozni? <span class="small">Opcionális. Soronként egy ablak: 2026-10-20 16:00-18:00 vagy ma 21:00-23:30. A hétköznap a mai vagy következő előfordulását jelenti. Az éjfélen átnyúló sáv megadható.</span></label>
-    <textarea id="availability" placeholder="Példa:\nszerda 6:30-8:30\nszerda 16:00-18:00\ncsütörtök 17:00-23:00"></textarea>
-    <button id="calc">Időtábla számítása</button>
-  </section>
-
-  <section class="results" id="results" aria-live="polite"></section>
-
-  <footer>Tervezési prototípus; az időtartam nem jelent garantált érettséget. A számítás irányadó: a poolish tényleges állapotát mindig ellenőrizd buborék, illat, térfogat és felszín alapján.</footer>
-</main>
-<script src="src/messages.js"></script>
-<script src="src/planner.js"></script>
-<script src="src/ui.js"></script>
-</body>
-</html>
+<html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PizzaPlanner v0.4</title><link rel="stylesheet" href="style.css"></head>
+<body><main><h1>PizzaPlanner <span class="tag">v0.4</span></h1><p class="subtitle">Saját időbeosztásodhoz igazítható pizzatervező</p>
+<section class="card"><h2>Pizza és mennyiség</h2><div class="grid">
+<div><label for="profile">Pizzatípus</label><select id="profile"><option value="legacy">Saját poolish (v0.3)</option><option value="naples">Nápolyi jellegű</option><option value="round">Római kerek – tonda romana</option><option value="roman">Római tepsis – in teglia</option></select></div><div><label for="method">Eljárás</label><select id="method"><option value="poolish">Poolish</option><option value="direct">Direkt</option></select></div><div><label for="foldMode">Hajtogatási eljárás</label><select id="foldMode"><option value="lamination">Két laminálás – kézi nyújtás és összehajtás</option><option value="two">Két kíméletes hajtogatás – 20 / 25 / 30 perc pihenő</option><option value="none">Hajtogatás nélkül – 30 perc pihenő</option></select></div><div><label for="quantity">Mennyiség megadása</label><select id="quantity"><option value="flour">Összes lisztből</option><option value="pieces">Darabszám és buciméret</option><option value="pan">Tepsiméretből</option></select></div><div><label for="count">Pizzák / tepsik száma</label><input id="count" type="number" value="4" min="1" max="50" step="1"></div><div><label for="ballWeight">Buciméret (g)</label><input id="ballWeight" type="number" value="250" min="100" max="1000" step="1"></div><div><label for="width">Tepsi belső szélessége (cm)</label><input id="width" type="number" value="30" min="10" max="100" step="0.5"></div><div><label for="length">Tepsi belső hossza (cm)</label><input id="length" type="number" value="40" min="10" max="100" step="0.5"></div><div><label for="density">Tészta tepsifelületre (g/cm²)</label><input id="density" type="number" value="0.5" min="0.2" max="1" step="0.01"></div></div><p id="profileNote" class="note"></p><p id="customNote" class="note"></p><button id="resetProfile" type="button">Profil alapértékeinek visszaállítása</button></section><section class="card"><h2>Időzítés</h2><div class="grid"><div><label for="mode">Tervezési mód</label><select id="mode"><option value="bake">Sütési időből visszaszámolás</option><option value="start">Kezdésből előre</option><option value="both">Adott kezdés + adott sütés</option></select></div><div><label for="startDate">Kezdés</label><input id="startDate" type="datetime-local"></div><div><label for="bakeDate">Sütés kezdete</label><input id="bakeDate" type="datetime-local"></div><div><label for="style">Teljes idő a kezdéstől a sütésig</label><select id="style"><option value="fast">Gyors – 24 óra</option><option value="normal">Stabil – 36 óra</option><option value="long">Hosszú – 48 óra</option></select></div></div><p id="timingHelp" class="note"></p></section><section class="card"><h2>Recept és környezet</h2><div class="grid"><div><label for="flourTotal">Összes liszt (g)</label><input id="flourTotal" type="number" value="1000" min="100" max="30000" step="0.1"></div><div><label for="poolishPct">Poolish lisztje az összes lisztből (%)</label><input id="poolishPct" type="number" value="50" min="5" max="70" step="0.1"></div><div><label for="hydration">Hidratáció (%)</label><input id="hydration" type="number" value="61" min="50" max="85" step="0.5"></div><div><label for="saltPct">Só (%)</label><input id="saltPct" type="number" value="3" min="1.5" max="4" step="0.1"></div><div><label for="oil">Olaj (g / összliszt kg)</label><input id="oil" type="number" value="8" min="0" max="50" step="1"></div><div><label for="yeastPct">Aktív szárított élesztő (% az összlisztből)</label><input id="yeastPct" type="number" value="0.1" min="0.01" max="1" step="0.01"></div><div><label for="roomTemp">Szobahőmérséklet (°C)</label><input id="roomTemp" type="number" value="22" min="16" max="30" step="0.5"></div><div><label for="fridgeTemp">Hűtőhőmérséklet (°C)</label><input id="fridgeTemp" type="number" value="5" min="2" max="8" step="0.5"></div><div><label for="flourType">Liszt jellege</label><select id="flourType"><option value="00">00 pizzaliszt</option><option value="durum">Durum / durumos</option><option value="strong">Erős pizza- vagy kenyérliszt</option></select></div></div><p class="note">A hűtőhőmérséklet tájékoztató adat. A direkt élesztőadag kézzel beállított kiinduló érték, nem hőmérsékletfüggő számítás. A poolish élesztőadagja a korábbi prototípus becslése. A tényleges érettséget mindig ellenőrizd.</p>
+<label for="availability">Szabad idősávok (opcionális)</label><textarea id="availability" placeholder="ma 18:00-22:00&#10;2026-10-20 06:30-08:00"></textarea><p class="note">Soronként dátum vagy magyar napnév és időtartomány. A napnév mai vagy következő előfordulását használjuk. A sávok ellenőrzésre szolgálnak; automatikus optimalizálás még nincs.</p><button id="calc" type="button">Időtábla számítása</button></section>
+<section id="results" class="results" aria-live="polite"></section>
+<section class="card"><h2>Emlékeztetők</h2><p class="note">Az oldalon működő jelzésekhez tartsd nyitva a lapot és ébren a készüléket. Háttérben késhetnek; bezáráskor leállnak. A naptárexport után a naptárad kezeli a jelzéseket, saját beállításai szerint.</p><div class="grid">
+<div><label for="lead">Előjelzés</label><select id="lead"><option value="10">10 perccel korábban és az időpontban</option><option value="5">5 perccel korábban és az időpontban</option><option value="0">Csak az időpontban</option></select></div><label class="check"><input id="sound" type="checkbox"> Hangjelzés</label></div><div id="eventChoices" class="choices"></div><div class="actions"><button id="startReminders" type="button">Emlékeztetők indítása</button><button id="stopReminders" type="button" disabled>Leállítás</button><button id="notifications" type="button">Böngészőértesítés engedélyezése</button><button id="exportCalendar" type="button">Kijelölt lépések naptárba (.ics)</button></div><p id="notificationStatus" class="note"></p><p id="reminderStatus" role="status">Emlékeztetők nincsenek elindítva.</p><p id="nextReminder"></p><div id="alerts" role="log" aria-live="polite"></div><p class="note">Tervmódosításkor a futó jelzések az új tervre állnak át. Hibás tervnél leállnak. A múltbeli lépésekhez nem küldünk értesítést. A naptárba korábban importált eseményeket a weboldal nem frissíti: módosításkor töröld a régi importot a naptáradban, majd importáld az újat.</p></section>
+<footer>Kísérleti házi tervező. A profilok és forrásaik: <a href="docs/PROFILES.md">szakmai jegyzet</a>. Az érettséget a tészta állapota alapján ítéld meg.</footer></main>
+<script src="src/messages.js"></script><script src="src/planner.js"></script><script src="src/profiles.js"></script><script src="src/reminders.js"></script><script src="src/availability.js"></script><script src="src/ui.js"></script></body></html>

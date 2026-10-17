@@ -1,5 +1,23 @@
 # Változások
 
+## 0.4.0 — 2026-10-17
+
+- Új római kerek (tonda romana) profil, direkt eljárással, 220 g-os alapbucival, külön sodrófás végső nyújtási lépéssel és emlékeztetővel.
+- Külön laminálási és kíméletes hajtogatási választás; a laminálás munkalapon végzett kézi nyújtás–összehajtás.
+
+- Pontosítás: külön választható hajtogatási eljárás minden profilban; a nápolyi profilban is két hajtogatásos alapérték, kötelezőség állítása nélkül.
+- A „finom laminálás” elnevezés helyett kíméletes hajtogatás. Hajtogatás nélkül egyetlen 30 perces pihenő; megszűnt a fölöslegesen kettéválasztott 20+30 perc.
+
+
+- Saját poolish, nápolyi jellegű és római tepsis profilok, külön munkamenettel és forrásjegyzettel.
+- Direkt/poolish eljárás, mennyiségtervezés darabszámra vagy tepsiméretre.
+- Indítható/leállítható, lépésenként választható emlékeztetők, előjelzés és opcionális hang/rendszerértesítés.
+- Tervváltozáskor új jelzéssor, érvénytelen tervnél leállítás; múltbeli lépések kihagyása.
+- UTF-8, UTC-időpontokat és riasztásokat tartalmazó naptárexport; importált események nem frissülnek automatikusan.
+- A múltbeli kezdés semleges tájékoztatás.
+- A római kerek, biga, kovász és teljes többnyelvűség későbbi kiadás.
+
+
 ## 0.3.0 — 2026-10-17
 
 - Pontos 24/36/48 órás teljes tervezési idő, automatikusan frissülő számított időponttal.
