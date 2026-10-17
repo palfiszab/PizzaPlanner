@@ -2,6 +2,16 @@
 
 ## 0.5.0-dev — 2026-10-17
 
+- Teljes alkalmazásfordítás magyar, olasz, francia, német és angol nyelvre; 233 fordítási kulcs, közös helyőrzőkkel.
+- Nyelvválasztó, megjegyzett nyelv, nyelvi dátum- és számformázás.
+- Lefordított dinamikus idővonal, hibák, rendszerértesítési szöveg és naptárexport.
+- Öt nyelven értelmezett szabad idősávok; a bevitt szöveg nyelvváltás után is változatlan.
+- Nyelvváltáskor megőrzött űrlap, időpontok, kijelölések és kézbesítési állapot; nincs ismételt értesítés.
+- Asszisztensi nyelvi átnézés: pontosabb olasz, francia, német és angol szakkifejezések és mennyiségleírások. Külső anyanyelvi szaklektor nem vett részt.
+- Próbajelzés gomb az oldalon látható jelzés, az opcionális hang és az engedélyezett rendszerértesítés kipróbálására.
+- Valós böngészős hang- és rendszerértesítési próba továbbra is szükséges.
+
+
 - Önálló fejlesztési ág; a main ágon megmarad a v0.4 commit.
 - Hosszú első fermentációs direkt változat, kézi ADY-adaggal, idővel és környezettel.
 - Biga időtervező a nápolyi és tepsis profilban, külön liszt/víz mérleggel és kizárólag kézzel megadott ADY-adaggal.

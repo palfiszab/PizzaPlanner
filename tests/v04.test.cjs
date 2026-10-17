@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const ctx=vm.createContext({console,Date,Intl,TextEncoder});
-for(const name of ['planner','profiles','reminders'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),ctx);
+for(const name of ['locales','messages','planner','profiles','reminders'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),ctx);
 const run=s=>vm.runInContext(s,ctx);
 run(`var base={profile:'legacy',method:'poolish',quantity:'flour',flour:1000,poolishPct:50,hydration:61,salt:3,oil:8,yeastPct:.1,count:4,ballWeight:250,width:30,length:40,density:.5,temp:22,fridge:5,flourType:'00',style:'normal'}; var start=new Date('2026-10-24T12:00:00');`);
 let count=0;

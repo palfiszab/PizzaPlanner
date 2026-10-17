@@ -2,8 +2,8 @@
 function reminderQueue(events,selected,lead,now){
  const queue=[];
  for(const e of events) if(e.active&&selected.has(e.id)&&+e.time>now){
-  if(lead>0&&+e.time-lead*60000>now) queue.push({key:e.id+':early',at:+e.time-lead*60000,label:`${lead} perc múlva: ${e.label}`,event:e});
-  queue.push({key:e.id+':due',at:+e.time,label:`Eljött az ideje: ${e.label}`,event:e});
+  if(lead>0&&+e.time-lead*60000>now) queue.push({key:e.id+':early',at:+e.time-lead*60000,label:PizzaText.t("m147", [lead, e.label]),event:e});
+  queue.push({key:e.id+':due',at:+e.time,label:PizzaText.t("m148", [e.label]),event:e});
  }
  return queue.sort((a,b)=>a.at-b.at);
 }
@@ -18,9 +18,9 @@ function dueReminders(queue,now,seen){
 function calendarText(events,selected,lead,now=new Date(),calendarId='pizzaplanner'){
  const esc=s=>String(s).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');
  const utc=d=>new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
- const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//PizzaPlanner//v0.5-dev//HU','CALSCALE:GREGORIAN'];
+ const lines=['BEGIN:VCALENDAR','VERSION:2.0',`PRODID:-//PizzaPlanner//v0.5-dev//${PizzaText.language.toUpperCase()}`,'CALSCALE:GREGORIAN'];
  for(const e of events) if(e.active&&selected.has(e.id)&&+e.time>+now){
-  lines.push('BEGIN:VEVENT',`UID:${calendarId}-${e.id}@pizzaplanner.local`,`DTSTAMP:${utc(now)}`,`DTSTART:${utc(e.time)}`,`DTEND:${utc(+e.time+Math.max(1,e.minutes)*60000)}`,`SUMMARY:${esc('PizzaPlanner: '+e.label)}`,`DESCRIPTION:${esc(e.detail)}`);
+  lines.push('BEGIN:VEVENT',`UID:${calendarId}-${e.id}@pizzaplanner.local`,`DTSTAMP:${utc(now)}`,`DTSTART:${utc(e.time)}`,`DTEND:${utc(+e.time+Math.max(1,e.minutes)*60000)}`,`SUMMARY:${esc(PizzaText.t("m149")+e.label)}`,`DESCRIPTION:${esc(e.detail)}`);
   for(const minutes of lead>0?[lead,0]:[0]) if(+e.time-minutes*60000>+now) lines.push('BEGIN:VALARM',`TRIGGER:-PT${minutes}M`,'ACTION:DISPLAY',`DESCRIPTION:${esc(e.label)}`,'END:VALARM');
   lines.push('END:VEVENT');
  }

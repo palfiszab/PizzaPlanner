@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const context=vm.createContext({Date,Intl,TextEncoder});
-for(const name of ['planner','profiles','reminders'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),context);
+for(const name of ['locales','messages','planner','profiles','reminders'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),context);
 const run=s=>vm.runInContext(s,context);
 // Doses below are synthetic test inputs, not baking recommendations.
 run(`var base={profile:'naples',method:'biga',quantity:'flour',flour:1000,poolishPct:50,bigaHydration:45,bigaHours:18,bigaTemp:18,bigaYeastPct:.2,hydration:62,salt:2.8,oil:0,yeastPct:.1,bulkHours:16,bulkTemp:16,longYeastPct:.05,count:4,ballWeight:250,width:30,length:40,density:.5,temp:22,fridge:5,flourType:'00',style:'normal'}; var start=new Date('2026-10-24T12:00');`);

@@ -15,19 +15,32 @@ class Element{
  get firstElementChild(){return this.children[0]}
  checkValidity(){const v=+this.value;return v>=this.min&&v<=this.max&&Math.abs((v-this.min)/this.step-Math.round((v-this.min)/this.step))<1e-6}
 }
-const elements={};
-for(const m of html.matchAll(/<(\w+)\b[^>]*\bid="([^"]+)"[^>]*>/g)){
- const [raw,tag,id]=m,el=new Element(tag);el.id=id;el.type=(raw.match(/type="([^"]+)"/)||[])[1];el.value=(raw.match(/value="([^"]+)"/)||[])[1]||'';
- for(const key of ['min','max','step'])el[key]=+(raw.match(new RegExp(key+'="([^"]+)"'))||[])[1];
- if(tag==='select'){const section=html.slice(m.index+raw.length).split('</select>')[0];el.options=Array.from(section.matchAll(/<option value="([^"]+)">/g),o=>({value:o[1],disabled:false}));el.value=el.options[0].value}
- elements[id]=el;
+const elements={},allElements=[],root=new Element('root'),stack=[root];
+const decode=s=>s.replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+for(const token of html.matchAll(/<[^>]*>|[^<]+/g)){
+ const raw=token[0];
+ if(raw.startsWith('</')){stack.pop();continue}
+ if(raw.startsWith('<!'))continue;
+ if(!raw.startsWith('<')){stack[stack.length-1].textContent+=decode(raw);continue}
+ const tag=raw.match(/^<(\w+)/)[1],el=new Element(tag),attrs={};
+ for(const a of raw.matchAll(/([\w-]+)="([^"]*)"/g))attrs[a[1]]=decode(a[2]);
+ el.attrs=attrs;el.dataset={};
+ for(const [key,value] of Object.entries(attrs))if(key.startsWith('data-'))el.dataset[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
+ el.id=attrs.id;el.type=attrs.type;el.value=attrs.value||'';
+ for(const key of ['min','max','step'])el[key]=+attrs[key];
+ if(el.id)elements[el.id]=el;allElements.push(el);stack[stack.length-1].append(el);
+ if(!['meta','link','input','br','hr'].includes(tag))stack.push(el);
 }
+for(const el of allElements.filter(e=>e.tag==='select')){el.options=el.children.filter(e=>e.tag==='option');el.value=el.options[0].value}
 let now=Date.UTC(2026,9,17,12), intervals=new Map(),seq=0;
 class FakeDate extends Date{constructor(...args){super(...(args.length?args:[now]))}static now(){return now}}
-const body=new Element('body');
-const doc={body,hidden:false,getElementById:id=>elements[id],createElement:tag=>new Element(tag),addEventListener(){},querySelectorAll:selector=>Object.values(elements).filter(e=>selector.includes('number')?e.type==='number':['input','select','textarea'].includes(e.tag)),querySelector:selector=>({textContent:selector})};
-const ctx=vm.createContext({console,Intl,Date:FakeDate,TextEncoder,document:doc,window:{isSecureContext:false},setInterval:fn=>{intervals.set(++seq,fn);return seq},clearInterval:id=>intervals.delete(id),setTimeout:fn=>fn(),Blob,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});
-for(const name of ['messages','planner','profiles','reminders','availability','ui'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),ctx);
+const body=allElements.find(e=>e.tag==='body'),storage=new Map();
+const doc={body,documentElement:allElements.find(e=>e.tag==='html'),hidden:false,getElementById:id=>elements[id],createElement:tag=>new Element(tag),addEventListener(){},
+ querySelectorAll:selector=>allElements.filter(e=>selector==='[data-i18n]'?e.dataset.i18n:selector==='[data-i18n-placeholder]'?e.dataset.i18nPlaceholder:selector.includes('number')?e.type==='number':['input','select','textarea'].includes(e.tag)),
+ querySelector:selector=>{const id=selector.match(/for="([^"]+)"/)[1];return allElements.find(e=>e.tag==='label'&&e.attrs.for===id)}
+};
+const ctx=vm.createContext({console,Intl,Date:FakeDate,TextEncoder,localStorage:{getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)},document:doc,window:{isSecureContext:false},setInterval:fn=>{intervals.set(++seq,fn);return seq},clearInterval:id=>intervals.delete(id),setTimeout:fn=>fn(),Blob,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});
+for(const name of ['locales','messages','planner','profiles','reminders','availability','ui'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src',name+'.js'),'utf8'),ctx);
 const run=s=>vm.runInContext(s,ctx),allText=el=>el.textContent+el.children.map(allText).join(' ');
 assert(run('current!==null'),allText(elements.results));
 for(const mode of ['start','bake'])for(const style of ['fast','normal','long']){
@@ -85,3 +98,51 @@ elements.directVariant.value='standard';elements.directVariant.change();assert(!
 elements.bigaYeastPct.value='';elements.longYeastPct.value='';run('calc()');assert(run('current!==null'));
 elements.stopReminders.click();
 console.log('v0.5 felület: üres ADY-adag blokkolása, biga/direkt-váltás, mezők, futó emlékeztetők cseréje: OK');
+// Language changes preserve inputs, selections, timer count and delivered reminders.
+elements.profile.value='naples';elements.profile.change();elements.mode.value='start';elements.startDate.value='2026-10-26T12:00';elements.availability.value='ma 18:00-22:00';run('calc()');
+elements.startReminders.click();
+now=run('queue[0].at');run('tick()');
+const inputSnapshot=()=>JSON.stringify(Object.fromEntries(Object.entries(elements).filter(([id,e])=>e.tag==='input'||e.tag==='select'||e.tag==='textarea').filter(([id])=>id!=='language').map(([id,e])=>[id,e.value,e.checked])));
+const beforeInputs=inputSnapshot(),beforeTimes=run('JSON.stringify(current.events.map(e=>+e.time))'),beforeChoices=run('JSON.stringify(Array.from(selectedIds()))'),beforeSeen=run('JSON.stringify(Array.from(seen))'),beforeAlerts=elements.alerts.children.length;
+for(const lang of ['it','fr','de','en','hu']){
+ elements.language.value=lang;elements.language.change();
+ assert.equal(doc.documentElement.lang,lang);assert.equal(storage.get('pizzaplanner.language'),lang);
+ assert.equal(inputSnapshot(),beforeInputs);assert.equal(run('JSON.stringify(current.events.map(e=>+e.time))'),beforeTimes);
+ assert.equal(run('JSON.stringify(Array.from(selectedIds()))'),beforeChoices);assert.equal(run('JSON.stringify(Array.from(seen))'),beforeSeen);
+ assert.equal(intervals.size,1);assert.equal(elements.alerts.children.length,beforeAlerts);assert(run('running'));
+ assert.equal(elements.calc.textContent,run("PizzaText.t('m209')"));
+ assert.equal(allText(elements.results).includes(run("PizzaText.t('m076')")),true);
+ assert.equal(elements.reminderStatus.textContent,run("PizzaText.t('m051')"));
+ assert(!elements.alerts.children.some(e=>lang!=='hu'&&/[őű]|Dagasztás|ideje/.test(e.textContent)));
+}
+elements.stopReminders.click();
+// Invalid experimental input remains entered and its error changes language.
+elements.method.value='biga';elements.bigaYeastPct.value='';elements.method.change();assert.equal(run('current'),null);
+elements.language.value='en';elements.language.change();assert.equal(elements.bigaYeastPct.value,'');assert.equal(run('current'),null);assert(allText(elements.results).includes('check the entered value'));
+console.log('Nyelvváltás: mezők, időpontok, kijelölések, futó időzítő, már kézbesített jelzések és hibás bevitel megőrzése: OK');
+
+// Browser APIs are mocked: this verifies control flow, not audible sound or OS delivery.
+(async()=>{
+ let delivered=0,tones=0,resumed=0;
+ class FakeNotification{static permission='granted';constructor(title,options){delivered++;assert.equal(title,'PizzaPlanner');assert.equal(options.body,run("PizzaText.t('test.title')"));}}
+ ctx.Notification=ctx.window.Notification=FakeNotification;
+ ctx.window.AudioContext=class{constructor(){this.currentTime=0;this.destination={};}async resume(){resumed++;}createOscillator(){return {frequency:{},connect(){},start(){tones++;},stop(){}};}createGain(){return {gain:{},connect(){}};}};
+ elements.sound.checked=true;
+ const count=elements.alerts.children.length;
+ await elements.testAlert.listeners.click[0]();
+ assert.equal(delivered,1);assert.equal(tones,1);assert.equal(resumed,1);assert.equal(elements.alerts.children.length,Math.min(10,count+1));
+ assert.equal(run('running'),false);assert.equal(intervals.size,0);assert.equal(run('current'),null);
+ // A browser may leave resume() pending: visible and OS alerts must still fire immediately.
+ let releaseAudio;
+ run('audio').resume=()=>new Promise(resolve=>{releaseAudio=resolve;});
+ const pending=elements.testAlert.listeners.click[0]();
+ assert.equal(delivered,2);assert.equal(tones,1);
+ assert(elements.alerts.children.at(-1).textContent.includes(run("PizzaText.t('test.title')")));
+ assert.equal(intervals.size,0);assert.equal(run('running'),false);
+ releaseAudio();await pending;assert.equal(tones,2);
+ FakeNotification.permission='denied';elements.sound.checked=false;
+ await elements.testAlert.listeners.click[0]();assert.equal(delivered,2);assert.equal(tones,2);
+ delete ctx.window.Notification;delete ctx.Notification;
+ await elements.testAlert.listeners.click[0]();assert.equal(delivered,2);assert.equal(tones,2);
+ console.log('Próbajelzés: hang és értesítési API utánzattal, tiltott/nem támogatott értesítés, terv és időzítő nélkül: OK');
+})().catch(error=>{console.error(error);process.exitCode=1;});

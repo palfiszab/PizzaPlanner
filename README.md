@@ -10,9 +10,9 @@
 
 Az új részek kézi receptadatokra épülő időtervezők; nem validált ADY-pizzareceptek és nem automatikus érettségi modellek. A 18 óra/18 °C biga, illetve 16 óra/16 °C hosszú direkt kezdőértékek szerkezeti támpontok, nem kipróbált ADY-ajánlások. Pontos források, eltérések és nyitott kérdések: [docs/FERMENTATION-EVIDENCE.md](docs/FERMENTATION-EVIDENCE.md).
 
-A teljes többnyelvűség és az új ADY-adagolás kalibrálása további fejlesztés.
+Az öt nyelv elkészült. Az új ADY-adagolás kalibrálása és valós sütési próbái további feladatok.
 
-Magyar nyelvű, telepítés nélkül használható pizzatervező. Nyisd meg az `index.html` fájlt vagy szolgáld ki statikus weboldalként. A fájlok maradjanak egy mappaszerkezetben.
+Magyar, olasz, francia, német és angol nyelven használható, telepítést nem igénylő pizzatervező. Nyisd meg az `index.html` fájlt vagy szolgáld ki statikus weboldalként. A fájlok maradjanak egy mappaszerkezetben.
 
 ## Újdonságok
 
@@ -47,7 +47,20 @@ A naptárfájlt importáld a saját naptáradba, és ellenőrizd az értesítés
 
 A profilok kísérleti házi adaptációk, nem minősített receptek. Az élesztőadagolás és a hűtőhőmérséklet hatása még nem validált fermentációs modell. A tészta állapota elsődleges. A pontos források és eltérések: [docs/PROFILES.md](docs/PROFILES.md).
 
-A felület magyar. A meglévő üzenetkatalógus és nyelvi dátumformázás megmaradt; az öt teljes nyelv a következő fejlesztési szakasz.
+## Nyelvek
+
+A jobb felső nyelvválasztó: Magyar, Italiano, Français, Deutsch, English. A választás a böngésző helyi tárhelyére kerül; ha a tárhely nem elérhető, az aktuális munkamenetben akkor is működik. Alapértelmezés: magyar.
+
+A mezők, profilok, részletes munkafázisok, hibaüzenetek, emlékeztetők és új naptárexportok a kiválasztott nyelvet használják. Az időpontokat és kijelzett mennyiségeket nyelvi formátumban mutatjuk; a számítás és az időzóna nem változik. Nyelvváltás nem módosítja a beírt értékeket, dátumokat, az idősávszöveget és a kijelöléseket, nem indít új időzítőt, és nem küldi újra a már kézbesített jelzéseket.
+
+Az idősávok az öt nyelv teljes napneveit és a ma/holnap/holnapután megfelelőit is elfogadják. A magyar sorok más megjelenítési nyelven is működnek. Példák: `oggi 18:00-22:00`, `lundi 06:30-08:00`, `übermorgen 17:00-20:00`, `today 12:00-13:00`. Az ISO-dátumos alak továbbra is támogatott.
+
+A forrásjegyzetek egyelőre magyar dokumentumok; ezt a felület linkje is jelzi. A fordításokat az asszisztens nyelvileg átnézte; külső, anyanyelvi szaklektor nem vett részt az ellenőrzésben.
+
+### Fordítások karbantartása
+
+`src/locales.js` tartalmazza a teljes öt nyelvű katalógust, `src/messages.js` a közös futtatókódot. Az `m...` azonosítók stabilak: új szöveghez új kulcs kell, a meglévőket nem számozzuk újra. A `{0}`, `{1}` stb. helyőrzők minden fordításban azonos készletet alkotnak. A katalógus és a dinamikus események ellenőrzése: `node tests/i18n.test.cjs`.
+
 
 ## Ellenőrzés
 
@@ -57,6 +70,7 @@ Node.js 18 vagy újabb, külső csomag nélkül:
 node tests/planner.test.cjs
 node tests/v04.test.cjs
 node tests/v05.test.cjs
+node tests/i18n.test.cjs
 node tests/ui.test.cjs
 ```
 
@@ -65,3 +79,9 @@ A felületi teszt elszigetelt DOM-modellel ellenőrzi az eseménykezelőket. Nem
 MIT-licenc.
 
 A római kerek profil direkt eljárást és alapértelmezetten 220 g-os bucikat használ; a sütés előtti sodrófás nyújtás külön lépés és külön emlékeztető. A laminálás (munkalapon végzett kézi lapra nyújtás és összehajtás) külön választható a kíméletes hajtogatástól. Saját poolish és nápolyi profilnál laminálás az alapérték, rómaiaknál kíméletes hajtogatás.
+
+### Próbajelzés
+
+A „Próbajelzés” gomb terv nélkül is kipróbálható, és nem indít emlékeztető-időzítőt. A jelzés mindig megjelenik az oldalon. A hanghoz kapcsold be a hangjelzést; a rendszerértesítéshez előbb a külön engedélykérő gombbal adj böngészőengedélyt. A próba maga nem kér engedélyt.
+
+Az automatizált ellenőrzés a böngésző hang- és értesítési felületét utánzattal vizsgálja. A tényleges hangot és rendszerértesítést a saját böngésződben kell kipróbálni. Részletek: [v0.5 ellenőrzési jegyzet](docs/QA-v0.5.md).

@@ -1,3 +1,4 @@
+var PizzaText=typeof module!=='undefined'?require('./messages.js'):PizzaI18n;
 function poolishHours(temp, style, flourType){
   let h = style==='fast'?7.5:style==='normal'?10:12;
   if(temp>=26) h-=3; else if(temp>=24) h-=2; else if(temp>=22) h-=1; else if(temp<=19) h+=2;
@@ -18,10 +19,10 @@ function processDurations(){
 
 const TOTAL_HOURS = {fast:24,normal:36,long:48};
 function plan(start, bake, options){
-  if(!Number.isFinite(+start)||!Number.isFinite(+bake)) throw new Error('Érvénytelen időpont.');
+  if(!Number.isFinite(+start)||!Number.isFinite(+bake)) throw new Error(PizzaText.t("m142"));
   const hours=(bake-start)/3600000;
-  if(hours<=0) throw new Error('A sütés időpontja legyen későbbi a kezdésnél.');
-  if(!options.fixedInterval && hours<TOTAL_HOURS[options.style]) throw new Error(`A kiválasztott tervhez legalább ${TOTAL_HOURS[options.style]} óra kell; most ${Math.round(hours*100)/100} óra áll rendelkezésre.`);
+  if(hours<=0) throw new Error(PizzaText.t("m143"));
+  if(!options.fixedInterval && hours<TOTAL_HOURS[options.style]) throw new Error(PizzaText.t("m144", [TOTAL_HOURS[options.style], Math.round(hours*100)/100]));
   const d=processDurations(), poolish=new Date(start);
   const mix=addMin(poolish,poolishHours(options.temp,options.style,options.flourType)*60);
   const salt=addMin(mix,d.mix+d.autolyse), rest=addMin(salt,d.saltOil);
@@ -31,11 +32,11 @@ function plan(start, bake, options){
   const fridgeIn=addMin(ball,d.balling+d.fridgeBuffer),out=addMin(bake,-benchBeforeBake(options.temp));
   const cold=(out-fridgeIn)/3600000;
   // Operational planning limits, not a validated fermentation model.
-  if(cold<1 || cold>48) throw new Error('Ebben a prototípusban 1–48 óra hidegérlelés tervezhető. Módosítsd az időpontokat vagy az időtartamot.');
+  if(cold<1 || cold>48) throw new Error(PizzaText.t("m145"));
   return {poolish,mix,salt,rest,lam1,restAfterLam1,lam2,restAfterLam2,ball,fridgeIn,out,bake:new Date(bake)};
 }
 function waterSplit(finalWater){
-  if(!Number.isFinite(finalWater)||finalWater<0) throw new Error('A poolish vize meghaladja a teljes vízmennyiséget.');
+  if(!Number.isFinite(finalWater)||finalWater<0) throw new Error(PizzaText.t("m146"));
   const saltWater=Math.min(finalWater,25,Math.round(finalWater*.22));
   return {saltWater,firstWater:finalWater-saltWater};
 }
