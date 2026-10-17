@@ -4,16 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PizzaPlanner – Fermentációs időzítő</title>
-  <style>
-    :root { --bg:#101113; --panel:#1b1d21; --panel2:#15171a; --text:#f6f0e8; --muted:#b7afa4; --accent:#f0b35a; --line:#343842; --danger:#ff8a8a; --ok:#72d47d; }
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.45} main{max-width:1120px;margin:0 auto;padding:28px 18px 64px} h1{margin:0 0 6px;font-size:2.1rem}.subtitle{color:var(--muted);margin-bottom:22px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px} label{display:block;color:var(--muted);font-size:.9rem;margin-bottom:5px} input,select,textarea,button{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#0d0f12;color:var(--text);font-size:1rem} textarea{min-height:94px;resize:vertical} button{background:var(--accent);color:#241506;border:0;font-weight:800;cursor:pointer;margin-top:14px} button:hover{filter:brightness(1.05)} .results{margin-top:22px} table{width:100%;border-collapse:collapse;overflow:hidden;border-radius:14px} th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top} th{color:var(--accent);background:#181a1e} tr:last-child td{border-bottom:0}.note{color:var(--muted);font-size:.95rem}.warning{color:var(--danger)}.ok{color:var(--ok)}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);font-size:.85rem}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}.summary div{background:var(--panel2);padding:12px;border-radius:12px;border:1px solid var(--line)}.summary strong{display:block;color:var(--accent);font-size:1.1rem}.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.hidden{display:none}.small{font-size:.88rem;color:var(--muted)} footer{margin-top:22px;color:var(--muted);font-size:.9rem}.tag{font-size:.75rem;color:#241506;background:var(--accent);padding:2px 7px;border-radius:999px;font-weight:800}
-    @media (max-width:720px){.row2{grid-template-columns:1fr} th,td{padding:10px 8px;font-size:.92rem}}
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <main>
-  <h1>PizzaPlanner <span class="tag">v0.2</span></h1>
-  <div class="subtitle">Poolish-os pizzaidőzítő: előre vagy visszafelé számol, és kezeli, ha megadod, mikor tudsz ténylegesen foglalkozni a tésztával.</div>
+  <h1>PizzaPlanner <span class="tag">v0.3</span></h1>
+  <div class="subtitle">Poolish-os pizzaidőzítő: előre vagy visszafelé számol, és ellenőrzi a megadott szabad idősávokat.</div>
 
   <section class="card">
     <div class="grid">
@@ -34,11 +30,11 @@
         <input id="bakeDate" type="datetime-local" />
       </div>
       <div>
-        <label for="style">Időzítési karakter</label>
+        <label for="style">Teljes idő: poolish indításától a sütés kezdetéig</label>
         <select id="style">
-          <option value="fast">Gyors – holnapi sütés</option>
-          <option value="normal" selected>Stabil – kb. 36–48 óra</option>
-          <option value="long">Hosszú – 48–72 óra</option>
+          <option value="fast">Gyors – 24 óra</option>
+          <option value="normal" selected>Stabil – 36 óra</option>
+          <option value="long">Hosszú – 48 óra</option>
         </select>
       </div>
     </div>
@@ -57,145 +53,20 @@
     </div>
   </section>
 
+  <p class="note" id="timingHelp"></p>
+  <p class="note">A hűtő hőmérséklete tájékoztató adat; a v0.3 még nem számol hőmérsékletfüggő hidegérleléssel. Az élesztőmennyiség a korábbi prototípus becslése.</p>
   <section class="card">
-    <label for="availability">Mikor tudsz vele foglalkozni? <span class="small">Opcionális. Soronként egy ablak: szerda 16:00-18:00, csütörtök 17:00-23:00, ma 21:00-23:30.</span></label>
+    <label for="availability">Mikor tudsz vele foglalkozni? <span class="small">Opcionális. Soronként egy ablak: 2026-10-20 16:00-18:00 vagy ma 21:00-23:30. A hétköznap a mai vagy következő előfordulását jelenti. Az éjfélen átnyúló sáv megadható.</span></label>
     <textarea id="availability" placeholder="Példa:\nszerda 6:30-8:30\nszerda 16:00-18:00\ncsütörtök 17:00-23:00"></textarea>
     <button id="calc">Időtábla számítása</button>
   </section>
 
-  <section class="results" id="results"></section>
+  <section class="results" id="results" aria-live="polite"></section>
 
-  <footer>Első nyilvános prototípus. A számítás irányadó: a poolish tényleges állapotát mindig ellenőrizd buborék, illat, térfogat és felszín alapján.</footer>
+  <footer>Tervezési prototípus; az időtartam nem jelent garantált érettséget. A számítás irányadó: a poolish tényleges állapotát mindig ellenőrizd buborék, illat, térfogat és felszín alapján.</footer>
 </main>
-<script>
-const $ = id => document.getElementById(id);
-const DAY_NAMES = ['vasárnap','hétfő','kedd','szerda','csütörtök','péntek','szombat'];
-const DAY_SHORT = ['Vas','Hét','Kedd','Sze','Csüt','Pén','Szo'];
-function pad(n){return String(n).padStart(2,'0')}
-function localValue(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`}
-function fmt(d){return `${DAY_SHORT[d.getDay()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`}
-function addMin(d,m){return new Date(d.getTime()+m*60000)}
-function subMin(d,m){return addMin(d,-m)}
-function round2(n){return Math.round(n*100)/100}
-
-function poolishHours(temp, style, flourType){
-  let h = style==='fast'?7.5:style==='normal'?10:12;
-  if(temp>=26) h-=3; else if(temp>=24) h-=2; else if(temp>=22) h-=1; else if(temp<=19) h+=2;
-  if(flourType==='durum') h+=1.5;
-  return Math.max(5,h);
-}
-function coldHours(style){return style==='fast'?13:style==='normal'?24:36}
-function benchBeforeBake(temp){return temp>=26?120:temp>=24?150:165}
-function yeast(poolishFlour,temp,style){
-  const kg=poolishFlour/1000; let perKg;
-  if(style==='fast') perKg=temp>=26?2.0:temp>=24?2.4:3.0;
-  else if(style==='normal') perKg=temp>=26?0.32:temp>=24?0.42:temp>=22?0.52:0.62;
-  else perKg=temp>=24?0.18:0.24;
-  return Math.max(0.04, kg*perKg);
-}
-function processDurations(){
-  return { mix:30, autolyse:20, saltOil:15, rest:25, lamGap:20, balling:15, fridgeBuffer:10 };
-}
-function getNumbers(){
-  const flourTotal=+$('flourTotal').value, poolishFlour=+$('poolishFlour').value;
-  const hydration=+$('hydration').value/100, saltPct=+$('saltPct').value/100;
-  const poolishWater=poolishFlour, finalFlour=flourTotal-poolishFlour, totalWater=Math.round(flourTotal*hydration), finalWater=totalWater-poolishWater;
-  return {flourTotal,poolishFlour,poolishWater,finalFlour,totalWater,finalWater,salt:Math.round(flourTotal*saltPct),oil:Math.round(flourTotal/1000*(+$('oil').value))};
-}
-function buildFromBake(bake){
-  const temp=+$('roomTemp').value, style=$('style').value, flourType=$('flourType').value, d=processDurations();
-  const out=subMin(bake, benchBeforeBake(temp));
-  const fridgeIn=subMin(out, coldHours(style)*60);
-  const ball=subMin(fridgeIn,d.fridgeBuffer+d.balling);
-  const lam2=subMin(ball,d.lamGap);
-  const lam1=subMin(lam2,d.lamGap);
-  const rest=subMin(lam1,d.rest);
-  const salt=subMin(rest,d.saltOil);
-  const mix=subMin(salt,d.autolyse+d.mix);
-  const poolish=subMin(mix,poolishHours(temp,style,flourType)*60);
-  return {poolish,mix,salt,rest,lam1,lam2,ball,fridgeIn,out,bake};
-}
-function buildFromStart(start){
-  const temp=+$('roomTemp').value, style=$('style').value, flourType=$('flourType').value, d=processDurations();
-  const poolish=start;
-  const mix=addMin(poolish,poolishHours(temp,style,flourType)*60);
-  const salt=addMin(mix,d.mix+d.autolyse);
-  const rest=addMin(salt,d.saltOil);
-  const lam1=addMin(rest,d.rest);
-  const lam2=addMin(lam1,d.lamGap);
-  const ball=addMin(lam2,d.lamGap);
-  const fridgeIn=addMin(ball,d.balling+d.fridgeBuffer);
-  const out=addMin(fridgeIn,coldHours(style)*60);
-  const bake=addMin(out,benchBeforeBake(temp));
-  return {poolish,mix,salt,rest,lam1,lam2,ball,fridgeIn,out,bake};
-}
-function parseAvailability(text, anchor){
-  const out=[]; if(!text.trim()) return out;
-  const lines=text.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-  for(const line of lines){
-    const m=line.toLowerCase().match(/(ma|holnap|holnapután|hétfő|kedd|szerda|csütörtök|péntek|szombat|vasárnap)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-    if(!m) continue;
-    let date=new Date(anchor); date.setSeconds(0,0);
-    if(m[1]==='holnap') date.setDate(date.getDate()+1);
-    else if(m[1]==='holnapután') date.setDate(date.getDate()+2);
-    else if(m[1] !== 'ma'){
-      const target=DAY_NAMES.indexOf(m[1]); let delta=(target-date.getDay()+7)%7; if(delta===0 && date.getHours()>23) delta=7; date.setDate(date.getDate()+delta);
-    }
-    const [sh,sm]=m[2].split(':').map(Number), [eh,em]=m[3].split(':').map(Number);
-    const s=new Date(date), e=new Date(date); s.setHours(sh,sm,0,0); e.setHours(eh,em,0,0); if(e<=s) e.setDate(e.getDate()+1);
-    out.push({s,e});
-  }
-  return out;
-}
-function inWindows(t,wins){return !wins.length || wins.some(w=>t>=w.s && t<=w.e)}
-function availabilityNotes(tl){
-  const wins=parseAvailability($('availability').value, new Date()); if(!wins.length) return [];
-  const checks=[['Poolish indítása',tl.poolish],['Dagasztás',tl.mix],['Bucizás',tl.ball],['Kivétel a hűtőből',tl.out],['Sütés',tl.bake]];
-  return checks.filter(([_,t])=>!inWindows(t,wins)).map(([name,t])=>`${name}: ${fmt(t)} kívül esik a megadott szabad idősávokon.`);
-}
-function render(tl, modeNote){
-  const n=getNumbers(), temp=+$('roomTemp').value, style=$('style').value;
-  const y=yeast(n.poolishFlour,temp,style);
-  const saltWater=Math.min(25, Math.max(15, Math.round(n.finalWater*0.22)));
-  const firstWater=Math.max(0,n.finalWater-saltWater);
-  const warnings=[];
-  if(n.finalWater<0) warnings.push('A poolish vízmennyisége több, mint a teljes célvíz. Csökkentsd a poolish lisztet vagy emeld a hidratációt.');
-  if(temp>=26) warnings.push('26 °C körül a poolish gyorsan túléretté válhat. Ha korábban csúcson van, kezdj dagasztani hamarabb.');
-  if($('flourType').value==='durum') warnings.push('Durum/durumos lisztnél a poolish kevésbé látványosan emelkedhet; a buborék és az illat fontosabb jel.');
-  warnings.push(...availabilityNotes(tl));
-  const rows=[
-    [tl.poolish,'Poolish indítása',`${n.poolishFlour} g liszt + ${n.poolishWater} ml víz + ${round2(y).toFixed(2)} g aktív szárított élesztő. Lazán fedve.`],
-    [tl.mix,'Dagasztás',`Poolish + ${n.finalFlour} g liszt + kb. ${firstWater} ml víz. Extra élesztő alapból nem kell.`],
-    [tl.salt,'Só + olaj',`${n.salt} g só kb. ${saltWater} ml visszatartott vízben oldva. Utána ${n.oil} g olaj, ha használod.`],
-    [tl.rest,'Pihenő','Letakarva 25–30 perc.'],
-    [tl.lam1,'1. finom laminálás','Csak szerkezetigazítás, nem vékonyra húzás.'],
-    [tl.lam2,'2. finom laminálás','Csak ha enged. Ha feszes, hagyd ki.'],
-    [tl.ball,'Bucizás','200–220 g-os bucik, nem túl szorosra.'],
-    [tl.fridgeIn,'Hűtő',`Lezárt dobozban ${$('fridgeTemp').value} °C körül.`],
-    [tl.out,'Kivétel a hűtőből','30–40 percig zárva hagyd, utána akklimatizáció.'],
-    [tl.bake,'Sütés','Nyújtás középről kifelé; a peremet ne nyomd ki.']
-  ];
-  $('results').innerHTML=`<div class="card"><p class="ok">${modeNote}</p><div class="summary"><div><span class="pill">összliszt</span><strong>${n.flourTotal} g</strong></div><div><span class="pill">összvíz</span><strong>${n.totalWater} ml</strong></div><div><span class="pill">főtészta víz</span><strong>${n.finalWater} ml</strong></div><div><span class="pill">só</span><strong>${n.salt} g</strong></div><div><span class="pill">olaj</span><strong>${n.oil} g</strong></div><div><span class="pill">poolish élesztő</span><strong>${round2(y).toFixed(2)} g</strong></div></div>${warnings.length?`<p class="warning">${warnings.join('<br>')}</p>`:''}<table><thead><tr><th>Idő</th><th>Lépés</th><th>Részlet</th></tr></thead><tbody>${rows.map(([time,step,detail])=>`<tr><td>${fmt(time)}</td><td><strong>${step}</strong></td><td>${detail}</td></tr>`).join('')}</tbody></table><p class="note">Megjegyzés: a só oldóvize mindig a teljes vízmennyiség része, nem plusz víz. A szabad idősávok ellenőrzése még egyszerű prototípus-logika.</p></div>`;
-}
-function calc(){
-  const mode=$('mode').value;
-  const start=new Date($('startDate').value), bake=new Date($('bakeDate').value);
-  if((mode==='start'||mode==='both') && isNaN(start)){ $('results').innerHTML='<div class="card warning">Adj meg kezdési időpontot.</div>'; return; }
-  if((mode==='bake'||mode==='both') && isNaN(bake)){ $('results').innerHTML='<div class="card warning">Adj meg sütési időpontot.</div>'; return; }
-  if(mode==='bake') render(buildFromBake(bake),'Visszafelé számolt terv a sütési időpontból.');
-  else if(mode==='start') render(buildFromStart(start),'Előre számolt terv a kezdési időpontból.');
-  else {
-    const fromStart=buildFromStart(start);
-    const delta=Math.round((bake-fromStart.bake)/60000);
-    const tl=buildFromStart(start); tl.bake=bake; tl.out=subMin(bake,benchBeforeBake(+$('roomTemp').value));
-    render(tl,`Adott kezdés + adott sütés ellenőrzése. A természetes előre számolt sütéshez képest eltérés: ${delta} perc.`);
-  }
-}
-function defaults(){
-  const now=new Date(); now.setSeconds(0,0); $('startDate').value=localValue(now);
-  const b=new Date(now); b.setDate(b.getDate()+1); b.setHours(14,0,0,0); $('bakeDate').value=localValue(b);
-}
-$('calc').addEventListener('click',calc); defaults(); calc();
-</script>
+<script src="src/messages.js"></script>
+<script src="src/planner.js"></script>
+<script src="src/ui.js"></script>
 </body>
 </html>
