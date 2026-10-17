@@ -11,7 +11,7 @@ let calendarId='plan-'+Date.now().toString(36);
 function selectedIds(){return new Set(current?current.events.filter(e=>e.active&&choices.get(e.id)!==false).map(e=>e.id):[])}
 function configuration(){
  const hours=(new Date($('bakeDate').value)-new Date($('startDate').value))/3600000;
- return {foldMode:$('foldMode').value,profile:$('profile').value,method:$('method').value,quantity:$('quantity').value,count:+$('count').value,ballWeight:+$('ballWeight').value,width:+$('width').value,length:+$('length').value,density:+$('density').value,flour:+$('flourTotal').value,poolishPct:+$('poolishPct').value,hydration:+$('hydration').value,salt:+$('saltPct').value,oil:+$('oil').value,yeastPct:+$('yeastPct').value,temp:+$('roomTemp').value,fridge:+$('fridgeTemp').value,flourType:$('flourType').value,style:$('mode').value==='both'?(hours>=48?'long':hours>=36?'normal':'fast'):$('style').value};
+ return {directVariant:$('directVariant').value,bigaHydration:+$('bigaHydration').value,bigaHours:+$('bigaHours').value,bigaTemp:+$('bigaTemp').value,bigaYeastPct:$('bigaYeastPct').value.trim()?+$('bigaYeastPct').value:NaN,bulkHours:+$('bulkHours').value,bulkTemp:+$('bulkTemp').value,longYeastPct:$('longYeastPct').value.trim()?+$('longYeastPct').value:NaN,foldMode:$('foldMode').value,profile:$('profile').value,method:$('method').value,quantity:$('quantity').value,count:+$('count').value,ballWeight:+$('ballWeight').value,width:+$('width').value,length:+$('length').value,density:+$('density').value,flour:+$('flourTotal').value,poolishPct:+$('poolishPct').value,hydration:+$('hydration').value,salt:+$('saltPct').value,oil:+$('oil').value,yeastPct:+$('yeastPct').value,temp:+$('roomTemp').value,fridge:+$('fridgeTemp').value,flourType:$('flourType').value,style:$('mode').value==='both'?(hours>=48?'long':hours>=36?'normal':'fast'):$('style').value};
 }
 function field(id,visible){$(id).disabled=!visible;$(id).parentElement.hidden=!visible}
 function syncFields(){
@@ -25,15 +25,22 @@ function syncFields(){
  const quantity=$('quantity').value;
  field('flourTotal',quantity==='flour');field('count',quantity!=='flour'||p.pan);field('ballWeight',quantity==='pieces');
  for(const id of ['width','length','density'])field(id,quantity==='pan');
- field('poolishPct',$('method').value==='poolish');field('yeastPct',$('method').value==='direct');
+ const method=$('method').value,longDirect=method==='direct'&&$('directVariant').value==='long';
+ field('directVariant',method==='direct');
+ field('poolishPct',['poolish','biga'].includes(method));field('yeastPct',method==='direct'&&!longDirect);
+ for(const id of ['bigaHydration','bigaHours','bigaTemp','bigaYeastPct'])field(id,method==='biga');
+ for(const id of ['bulkHours','bulkTemp','longYeastPct'])field(id,longDirect);
+ $('methodNote').textContent=method==='biga'?'Kísérleti ADY-biga időterv. Az adagolást saját, ADY-val kipróbált receptből add meg. A 45% víz / 18 óra / 18 °C szerkezeti kiindulópont, nem validált ADY-pizzarecept. A megadott környezetet külön biztosítani kell.':longDirect?'Hosszú direkt változat: az első fermentáció a só bedolgozása után kezdődik, a korai hajtogatásokkal együtt számítjuk; utána bucizás (kerek pizzánál), majd hidegérlelés. Az ADY-adagot saját receptből add meg.':'Kizárólag aktív szárított élesztő (ADY). A meglévő adagolás kísérleti becslés.';
+
  $('profileNote').textContent=p.note;
- const changed=+ $('hydration').value!==p.hydration||+$('saltPct').value!==p.salt||+$('oil').value!==p.oil||$('foldMode').value!==p.foldDefault;
+ const changed=+ $('hydration').value!==p.hydration||+$('saltPct').value!==p.salt||+$('oil').value!==p.oil||$('foldMode').value!==p.foldDefault||$('method').value!==p.methods[0]||longDirect;
  $('customNote').textContent=changed?'Egyéni receptbeállítások; eltérnek a profil alapértékeitől.':`Profil alapértékei: ${p.hydration}% víz, ${p.salt}% só, ${p.oil} g olaj / kg liszt. Szabadon módosíthatók.`;
 }
 function resetProfile(){
  const p=PIZZA_PROFILES[$('profile').value];
  $('hydration').value=p.hydration;$('saltPct').value=p.salt;$('oil').value=p.oil;
  $('method').value=p.methods[0];$('poolishPct').value=50;
+ $('directVariant').value='standard';
  $('foldMode').value=p.foldDefault;
  $('flourType').value=p.pan?'strong':'00';
  $('quantity').value=p.pan?'pan':$('profile').value==='legacy'?'flour':'pieces';
@@ -67,9 +74,11 @@ function calc(){
 function render(wins){
  const root=$('results'),a=current.amounts,c=current.c;root.replaceChildren();const card=text(root,'div','','card');
  text(card,'h2','A tervezett munkamenet');
- text(card,'p',current.foldMode==='lamination'?'Két laminálás – kézi nyújtás és összehajtás · 20 / 25 / 30 perces pihenők. A második a tészta állapota szerint kihagyható.':current.foldMode==='two'?'Két kíméletes hajtogatás · 20 / 25 / 30 perces pihenők. A második hajtogatás a tészta állapota szerint kihagyható.':'Hajtogatás nélküli eljárás · 30 perc pihenő a só bedolgozása után.','note');
- text(card,'p',`${PIZZA_PROFILES[c.profile].name} · ${c.method==='poolish'?'Poolish':'Direkt'} · Teljes idő: ${g(current.totalHours)} óra · Hidegérlelés: ${g(current.cold)} óra`,'ok');
+ if(c.method==='biga'||current.longDirect)text(card,'p','Kísérleti időterv, saját receptből megadott ADY-adaggal. Az érési időpontok tervezett munkakezdések, nem érettségi ígéretek.','note');
+ text(card,'p',current.longDirect?'Hosszú első fermentáció: a hajtogatások és pihenők a megadott teljes első érlelési idő részei.':current.foldMode==='lamination'?'Két laminálás – kézi nyújtás és összehajtás · 20 / 25 / 30 perces pihenők. A második a tészta állapota szerint kihagyható.':current.foldMode==='two'?'Két kíméletes hajtogatás · 20 / 25 / 30 perces pihenők. A második hajtogatás a tészta állapota szerint kihagyható.':'Hajtogatás nélküli eljárás · 30 perc pihenő a só bedolgozása után.','note');
+ text(card,'p',`${PIZZA_PROFILES[c.profile].name} · ${c.method==='poolish'?'Poolish':c.method==='biga'?'Kísérleti ADY-biga':current.longDirect?'Hosszú fermentációs direkt':'Direkt'} · Teljes idő: ${g(current.totalHours)} óra · Hidegérlelés: ${g(current.cold)} óra`,'ok');
  if(current.start<new Date())text(card,'p','A megadott kezdési időpont már elmúlt. A terv ettől az időponttól mutatja a munkafázisokat.','note');
+ if(c.method==='biga')text(card,'p',`Biga: ${g(a.prefermentFlour)} g liszt + ${g(a.prefermentWater)} g víz, ${g(c.bigaYeastPct,2)}% ADY a biga lisztjére. Főtésztához még ${g(a.finalFlour)} g liszt és ${g(a.finalWater)} g víz. ${g(c.bigaHours)} óra tervezett érlelés, ${g(c.bigaTemp)} °C-os környezetben.`,'note');
  const summary=text(card,'div','','summary');
  for(const [label,value] of [['Liszt',`${g(a.flour)} g`],['Víz',`${g(a.water)} g`],['Só',`${g(a.salt)} g`],['Olaj',`${g(a.oil)} g`],['Élesztő (ADY)',`${g(current.yeast,2)} g`],['Teljes tészta',`${g(a.total+current.yeast)} g`]]){
   const cell=text(summary,'div','');text(cell,'span',label,'pill');text(cell,'strong',value);
@@ -143,7 +152,7 @@ $('exportCalendar').addEventListener('click',()=>{
  if(!current)return;
  if(!reminderQueue(current.events,selectedIds(),0,Date.now()).length){$('reminderStatus').textContent='Nincs kijelölt jövőbeli esemény az exporthoz.';return}
  const data=calendarText(current.events,selectedIds(),+$('lead').value,new Date(),calendarId),url=URL.createObjectURL(new Blob([data],{type:'text/calendar;charset=utf-8'}));
- const link=document.createElement('a');link.href=url;link.download='PizzaPlanner-v04.ics';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const link=document.createElement('a');link.href=url;link.download='PizzaPlanner-v05-dev.ics';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
  $('reminderStatus').textContent='A naptárfájl elkészült. Importáld a naptáradba, és ellenőrizd az eseményekhez tartozó értesítéseket.';
 });
 $('profile').addEventListener('change',resetProfile);$('resetProfile').addEventListener('click',resetProfile);$('calc').addEventListener('click',calc);

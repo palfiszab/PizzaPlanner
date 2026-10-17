@@ -1,5 +1,15 @@
 # Változások
 
+## 0.5.0-dev — 2026-10-17
+
+- Önálló fejlesztési ág; a main ágon megmarad a v0.4 commit.
+- Hosszú első fermentációs direkt változat, kézi ADY-adaggal, idővel és környezettel.
+- Biga időtervező a nápolyi és tepsis profilban, külön liszt/víz mérleggel és kizárólag kézzel megadott ADY-adaggal.
+- Új állapotellenőrzési lépések, emlékeztetők és naptárexport.
+- Nincs automatikus átváltás más élesztőtípusról, nincs validált új ADY-adagolási ajánlás.
+- Többforrásos szakmai jegyzet, a könyv és az ADY-specifikus bizonyítékok határainak megkülönböztetésével.
+
+
 ## 0.4.0 — 2026-10-17
 
 - Új római kerek (tonda romana) profil, direkt eljárással, 220 g-os alapbucival, külön sodrófás végső nyújtási lépéssel és emlékeztetővel.

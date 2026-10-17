@@ -5,10 +5,10 @@ A profilok házi, kísérleti adaptációk. A pontos százalékok és időablako
 | Profil | Víz | Só | Olaj / kg liszt | Eljárás és munkamenet |
 |---|---:|---:|---:|---|
 | Saját poolish (v0.3) | 61% | 3% | 8 g | Poolish; választható választható két kíméletes hajtogatás, a második opcionális; bucizott hidegérlelés |
-| Nápolyi jellegű | 62% | 2,8% | 0 g | Direkt vagy kísérleti poolish; választható laminálás/hajtogatás; bucizott hidegérlelés |
-| Római tepsis | 75% | 2,5% | 25 g | Direkt; választható két kíméletes hajtogatás, a második opcionális; egyben hidegérlelés, majd osztás, tepsibe nyújtás |
+| Nápolyi jellegű | 62% | 2,8% | 0 g | Direkt, poolish vagy kísérleti ADY-biga; választható laminálás/hajtogatás; bucizott hidegérlelés |
+| Római tepsis | 75% | 2,5% | 25 g | Direkt vagy kísérleti ADY-biga; választható két kíméletes hajtogatás, a második opcionális; egyben hidegérlelés, majd osztás, tepsibe nyújtás |
 
-Biga és kovász nem szerepel ebben a kiadásban: ezekhez még külön kidolgozott recept és idővonal szükséges.
+A v0.5 fejlesztési példány a bigát kísérleti, kézi ADY-receptadatokból dolgozó időtervezőként adja hozzá a nápolyi és római tepsis profilhoz. Kovász továbbra sincs. Részletes forrásértékelés: [FERMENTATION-EVIDENCE.md](FERMENTATION-EVIDENCE.md).
 
 ## Ellenőrzött források (2026-10-17)
 

@@ -68,3 +68,20 @@ elements.startReminders.click();assert(run("queue.some(e=>e.event.id==='roll')")
 elements.profile.value='roman';elements.profile.change();assert(!run("queue.some(e=>e.event.id==='roll')"));
 elements.stopReminders.click();
 console.log('Tonda romana: alapértékek, profilváltás és emlékeztetők: OK');
+// v0.5 experimental workflows require an explicitly entered ADY dose.
+elements.profile.value='naples';elements.profile.change();elements.mode.value='start';elements.startDate.value='2026-10-24T12:00';elements.style.value='normal';
+elements.method.value='biga';elements.method.change();
+assert.equal(run('current'),null);assert.equal(elements.bigaYeastPct.disabled,false);assert.equal(elements.yeastPct.disabled,true);assert.equal(elements.longYeastPct.disabled,true);
+elements.bigaYeastPct.value='.2';elements.bigaYeastPct.change();assert.equal(run('current.c.method'),'biga');
+assert(Math.abs(run('current.yeast')-run('current.amounts.prefermentFlour*.002'))<1e-9);
+elements.startReminders.click();assert(run("queue.some(e=>e.event.id==='bigaCheck')"));
+elements.bigaHours.value='20';elements.bigaHours.change();assert(run('running'));assert.equal(run('current.c.bigaHours'),20);
+elements.method.value='direct';elements.method.change();assert(!run("queue.some(e=>e.event.id==='biga')"));
+elements.directVariant.value='long';elements.directVariant.change();assert.equal(run('current'),null);assert(!run('running'));assert.equal(elements.longYeastPct.disabled,false);
+elements.longYeastPct.value='.05';elements.longYeastPct.change();assert(run('current.longDirect'));assert.equal(elements.bigaYeastPct.disabled,true);
+elements.startReminders.click();assert(run("queue.some(e=>e.event.id==='bulkCheck')"));
+elements.directVariant.value='standard';elements.directVariant.change();assert(!run('current.longDirect'));assert(!run("queue.some(e=>e.event.id==='bulkCheck')"));
+// Invalid hidden experimental fields do not break an unrelated recipe.
+elements.bigaYeastPct.value='';elements.longYeastPct.value='';run('calc()');assert(run('current!==null'));
+elements.stopReminders.click();
+console.log('v0.5 felület: üres ADY-adag blokkolása, biga/direkt-váltás, mezők, futó emlékeztetők cseréje: OK');

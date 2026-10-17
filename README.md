@@ -1,4 +1,16 @@
-# PizzaPlanner v0.4
+# PizzaPlanner v0.5 — fejlesztési példány
+
+**Fejlesztési változat a `development/v0.5-fermentation` ágon. A `main` ágon megmarad a commitolt v0.4.**
+
+## Új eljárások
+
+- **Hosszú fermentációs direkt:** a Direkt eljáráson belül külön változat. Kézzel megadott ADY-adag, első fermentációs idő és környezeti hőmérséklet. A korai tésztakezelések ebbe az időbe beleszámítanak. Kerek pizzánál ezután bucizás és hidegérlelés; tepsisnél egyben hűtés.
+- **Biga – kísérleti ADY-időzítés:** nápolyi és római tepsis profilnál. Külön előtészta-vízarány, lisztarány, tervezett érlelési idő, környezet és ADY-adag; állapotellenőrzés, majd főtészta.
+- **ADY-kizárólagosság:** nincs friss, instant vagy kovászos választó, nincs friss élesztős recept automatikus átváltása. Az új adagmezők szándékosan üresek, saját ADY-receptből kell kitölteni őket.
+
+Az új részek kézi receptadatokra épülő időtervezők; nem validált ADY-pizzareceptek és nem automatikus érettségi modellek. A 18 óra/18 °C biga, illetve 16 óra/16 °C hosszú direkt kezdőértékek szerkezeti támpontok, nem kipróbált ADY-ajánlások. Pontos források, eltérések és nyitott kérdések: [docs/FERMENTATION-EVIDENCE.md](docs/FERMENTATION-EVIDENCE.md).
+
+A teljes többnyelvűség és az új ADY-adagolás kalibrálása további fejlesztés.
 
 Magyar nyelvű, telepítés nélkül használható pizzatervező. Nyisd meg az `index.html` fájlt vagy szolgáld ki statikus weboldalként. A fájlok maradjanak egy mappaszerkezetben.
 
@@ -6,7 +18,7 @@ Magyar nyelvű, telepítés nélkül használható pizzatervező. Nyisd meg az `
 
 - Saját poolish, nápolyi jellegű, római kerek (tonda romana) és római tepsis profil, külön munkamenettel.
 - Külön hajtogatási eljárás: két kíméletes hajtogatás (20/25/30 perces pihenők) vagy hajtogatás nélkül (egyetlen 30 perces pihenő a só bedolgozása után). A nápolyi profil alapértéke is a két hajtogatásos házi változat; ez nem nápolyi követelmény.
-- Direkt/poolish választás a kidolgozott profilpárosításoknál. Római tepsisnél csak direkt.
+- Direkt/poolish választás a kidolgozott profilpárosításoknál. Római tepsisnél direkt vagy kísérleti ADY-biga.
 - Mennyiségek lisztből, darabszám/buciméretből vagy tepsiméretből. A tepsiterhelés módosítható.
 - Profilalapértékek és egyéni arányok megkülönböztetése, visszaállítási gomb.
 - Indítható/leállítható emlékeztetők, 0/5/10 perces előjelzés, munkafázisonként kapcsolható jelzések, opcionális hang és böngészőértesítés.
@@ -44,6 +56,7 @@ Node.js 18 vagy újabb, külső csomag nélkül:
 ```
 node tests/planner.test.cjs
 node tests/v04.test.cjs
+node tests/v05.test.cjs
 node tests/ui.test.cjs
 ```
 
