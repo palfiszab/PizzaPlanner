@@ -1,5 +1,13 @@
 # Változások
 
+## 0.6.0-dev — 2026-10-18
+
+- Telefonon egyoszlopos adatbevitel és kártyás idővonal, az öt nyelvhez igazodó oszlopcímkékkel.
+- Nagyobb érintési felületek, kényelmesebb jelölőnégyzetek, numerikus és tizedes billentyűzetkérések.
+- Keskeny képernyőre igazított dátummezők, gombok és képernyőszéli térközök.
+- Verziózott stílus- és programhivatkozások a korábbi fájlok keveredésének csökkentésére.
+
+
 ## 0.5.0-dev — 2026-10-17
 
 - Teljes alkalmazásfordítás magyar, olasz, francia, német és angol nyelvre; 233 fordítási kulcs, közös helyőrzőkkel.

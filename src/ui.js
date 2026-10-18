@@ -85,11 +85,14 @@ function render(wins){
  if(c.quantity!=='flour')text(card,'p',PIZZA_PROFILES[c.profile].pan?PizzaText.t("m028", [c.count, c.width, c.length, g(a.total/c.count)]):PizzaText.t("m029", [c.count, g(a.total/c.count)]),'note');
  if(c.quantity==='pan')text(card,'p',PizzaText.t("m030", [g(c.density,2)]),'note');
  if(c.temp>=26)text(card,'p',PizzaText.t("m031"),'warning');
- const wrap=text(card,'div','','table-wrap'),table=text(wrap,'table',''),head=text(table,'thead',''),hr=text(head,'tr','');
- for(const label of [PizzaText.t("m032"),PizzaText.t("m033"),PizzaText.t("m034")])text(hr,'th',label);
- const body=text(table,'tbody','');
+ const wrap=text(card,'div','','table-wrap'),table=text(wrap,'table','','timeline'),head=text(table,'thead',''),hr=text(head,'tr','');
+ const columns=[PizzaText.t('m032'),PizzaText.t('m033'),PizzaText.t('m034')];
+ table.setAttribute('role','table');head.setAttribute('role','rowgroup');hr.setAttribute('role','row');
+ for(const label of columns){const th=text(hr,'th',label);th.setAttribute('scope','col');th.setAttribute('role','columnheader');}
+ const body=text(table,'tbody','');body.setAttribute('role','rowgroup');
  for(const e of current.events){
-  const row=text(body,'tr','');text(row,'td',fmt(e.time));text(row,'td',e.label);text(row,'td',e.detail+(e.active&&e.minutes?PizzaText.t("m035", [e.minutes]):''));
+  const row=text(body,'tr','');row.setAttribute('role','row');
+  [fmt(e.time),e.label,e.detail+(e.active&&e.minutes?PizzaText.t('m035',[e.minutes]):'')].forEach((value,i)=>{const cell=text(row,'td',value);cell.setAttribute('data-label',columns[i]);cell.setAttribute('role','cell');});
   if(e.active&&wins.length&&!wins.some(w=>e.time>=w.s&&addMin(e.time,e.minutes)<=w.e))text(card,'p',PizzaText.t("m036", [e.label, fmt(e.time), e.minutes]),'warning');
  }
 }

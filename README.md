@@ -1,6 +1,6 @@
-# PizzaPlanner v0.5 — fejlesztési példány
+# PizzaPlanner v0.6 — fejlesztési példány
 
-**Fejlesztési változat a `development/v0.5-fermentation` ágon. A `main` ágon megmarad a commitolt v0.4.**
+**Mobilbarát v0.6 fejlesztési változat.**
 
 ## Új eljárások
 
@@ -85,3 +85,9 @@ A római kerek profil direkt eljárást és alapértelmezetten 220 g-os bucikat 
 A „Próbajelzés” gomb terv nélkül is kipróbálható, és nem indít emlékeztető-időzítőt. A jelzés mindig megjelenik az oldalon. A hanghoz kapcsold be a hangjelzést; a rendszerértesítéshez előbb a külön engedélykérő gombbal adj böngészőengedélyt. A próba maga nem kér engedélyt.
 
 Az automatizált ellenőrzés a böngésző hang- és értesítési felületét utánzattal vizsgálja. A tényleges hangot és rendszerértesítést a saját böngésződben kell kipróbálni. Részletek: [v0.5 ellenőrzési jegyzet](docs/QA-v0.5.md).
+
+### Mobilos felület (v0.6)
+
+600 képpont alatt egyoszlopos űrlap és lépésenkénti idővonalkártyák jelennek meg. A gombok legalább 48 képpont magasak, a jelölőnégyzetek teljes felirata érinthető. A számmezők billentyűzettípust kérnek, a dátummezők natívak maradnak. A nagyítás engedélyezett.
+
+Kézi iPhone-próba szükséges Safariban: álló és fekvő tájolás, dátumválasztás, törtértékek bevitele, mind az öt nyelv hosszú feliratai, idővonal és emlékeztetők. A jelen változat továbbra is weboldal; az értesítési működés nem bővült.
